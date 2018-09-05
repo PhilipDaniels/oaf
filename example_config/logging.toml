@@ -1,0 +1,16 @@
+# Scan this file for changes every 30 seconds
+refresh_rate = "30 seconds"
+
+# An appender named "stdout" that writes to stdout
+# For patterns see https://docs.rs/log4rs/0.7.0/log4rs/encode/pattern/index.html
+# The default pattern is "{d} {l} {t} - {m}{n}"
+[appenders.stdout]
+kind = "console"
+[appenders.stdout.encoder]
+pattern = "[{d(%Y-%m-%d %H:%M:%S)(utc)} {h({l:5.5})} {f}/{L}] {m}{n}"
+
+# Set the default logging level to "trace" and attach the "stdout" appender to the root.
+# Valid levels are Off, Error, Warn, Info, Debug, Trace.
+[root]
+level = "trace"
+appenders = ["stdout"]

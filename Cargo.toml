@@ -1,0 +1,17 @@
+[package]
+name = "oaf"
+version = "0.1.0"
+authors = ["Philip Daniels <Philip.Daniels1971@gmail.com>"]
+
+[dependencies]
+structopt = "0.2.10"
+log = "0.4.5"
+log4rs = { version = "0.8.0", features = [ "toml_format" ] }
+serde = "1.0" 
+serde_derive = "1.0"
+toml = "0.4"
+xdg = "2.1.0"
+
+[profile.release]
+lto = true
+
