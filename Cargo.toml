@@ -2,6 +2,7 @@
 name = "oaf"
 version = "0.1.0"
 authors = ["Philip Daniels <Philip.Daniels1971@gmail.com>"]
+build = "build.rs"
 
 [dependencies]
 structopt = "0.2.10"
@@ -11,6 +12,9 @@ serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 xdg = "2.1.0"
+
+[build-dependencies]
+built = "0.3.0"
 
 [profile.release]
 lto = true
