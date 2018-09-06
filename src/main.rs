@@ -2,23 +2,43 @@
 extern crate serde;
 #[macro_use] extern crate log;
 extern crate log4rs;
+#[macro_use] extern crate structopt;
 extern crate xdg;
+
+use structopt::StructOpt;
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }
 
+#[derive(StructOpt, Debug)]
+struct Arguments {
+    /// Turn off loading of all config files, use compiled-in defaults for all settings.
+    #[structopt(long = "no-config")]
+    no_config: bool,
+
+    /// Turn off all logging.
+    #[structopt(long = "no-logging")]
+    no_logging: bool,  
+}
+
+
+
 fn main() {
     std::env::set_var("IN_OAF", "1");
+
+    let args = Arguments::from_args();
 
     let base_dirs = xdg::BaseDirectories::with_prefix(built_info::PKG_NAME)
         .expect("Could not locate xdg base directories, cannot initialize.");
 
     // Configure logging as early as possible (because, obviously, we want to log
     // in the rest of the initialization phase).
-    configure_logging(&base_dirs);
-    log_built_info();
+    if !args.no_logging {
+        configure_logging(&base_dirs);
+        log_built_info();
+    }
 }
 
 fn configure_logging(base_dirs: &xdg::BaseDirectories) {
