@@ -7,6 +7,9 @@ extern crate xdg;
 
 use structopt::StructOpt;
 
+mod mru_list;
+use mru_list::MRUList;
+
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
@@ -39,6 +42,8 @@ fn main() {
         configure_logging(&base_dirs);
         log_built_info();
     }
+
+    let mru = MRUList::<String>::new(20);
 }
 
 fn configure_logging(base_dirs: &xdg::BaseDirectories) {
