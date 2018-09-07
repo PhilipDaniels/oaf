@@ -11,20 +11,20 @@ use std::ops::Index;
 /// The `MRUList` is not intended to be a high-performance data
 /// structure, it is intended for managing small numbers of items such as
 /// might appear in an editor's MRU menu.
-pub struct MRUList<MRUEntry> {
+pub struct MRUList<T> {
     is_changed: bool,
     max_items: usize,
-    data: Vec<MRUEntry>
+    data: Vec<T>
 }
 
-impl<MRUEntry> MRUList<MRUEntry>
-    where MRUEntry: cmp::PartialEq
+impl<T> MRUList<T>
+    where T: cmp::PartialEq
 {
     pub fn new(max_items: usize) -> Self {
         MRUList {
             is_changed: false,
             max_items,
-            data: Vec::<MRUEntry>::with_capacity(max_items)
+            data: Vec::<T>::with_capacity(max_items)
         }
     }
 
@@ -42,7 +42,7 @@ impl<MRUEntry> MRUList<MRUEntry>
 
     /// Adds a value into the MRUList. `value` is now the first item in the list.
     pub fn insert<V>(&mut self, value: V)
-        where V: Into<MRUEntry>
+        where V: Into<T>
     {
         let value = value.into();
         self.remove(&value);
@@ -53,7 +53,7 @@ impl<MRUEntry> MRUList<MRUEntry>
 
     // THOUGHT: Is there a way of taking a &V: Into<&MRUEntry> instead, so that this method
     // is as flexible as insert()?
-    pub fn remove(&mut self, value: &MRUEntry)
+    pub fn remove(&mut self, value: &T)
     {
         if let Some(pos) = self.data.iter().position(|x| *x == *value) {
             self.data.remove(pos);
@@ -61,29 +61,29 @@ impl<MRUEntry> MRUList<MRUEntry>
         }
     }
 
-    pub fn iter(&self) -> MRUIterator<MRUEntry> {
+    pub fn iter(&self) -> MRUIterator<T> {
         let it = MRUIterator { data: &self.data, next: 0 };
         it
     }
 }
 
-impl<MRUEntry> Index<usize> for MRUList<MRUEntry> {
-    type Output = MRUEntry;
+impl<T> Index<usize> for MRUList<T> {
+    type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.data[index]
     }
 }
 
-pub struct MRUIterator<'mru, MRUEntry: 'mru> {
-    data: &'mru Vec<MRUEntry>,
+pub struct MRUIterator<'mru, T: 'mru> {
+    data: &'mru Vec<T>,
     next: usize,
 }
 
-impl<'mru, MRUEntry> Iterator for MRUIterator<'mru, MRUEntry> {
-    type Item = &'mru MRUEntry;
+impl<'mru, T> Iterator for MRUIterator<'mru, T> {
+    type Item = &'mru T;
 
-    fn next(&mut self) -> Option<&'mru MRUEntry> {
+    fn next(&mut self) -> Option<Self::Item> {
         if self.next == self.data.len() {
             None
         } else {
@@ -93,11 +93,11 @@ impl<'mru, MRUEntry> Iterator for MRUIterator<'mru, MRUEntry> {
     }
 }
 
-impl<'mru, MRUEntry> IntoIterator for &'mru MRUList<MRUEntry>
-    where MRUEntry: PartialEq + 'mru
+impl<'mru, T> IntoIterator for &'mru MRUList<T>
+    where T: PartialEq + 'mru
 {
-    type Item = &'mru MRUEntry;
-    type IntoIter = MRUIterator<'mru, MRUEntry>;
+    type Item = &'mru T;
+    type IntoIter = MRUIterator<'mru, T>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
