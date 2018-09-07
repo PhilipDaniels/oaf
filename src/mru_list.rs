@@ -40,15 +40,8 @@ impl<T> MRUList<T>
         self.data.len()
     }
 
-    /// Adds a value into the MRUList. `value` is now the first item in the list.
-    pub fn insert<V>(&mut self, value: V)
-        where V: Into<T>
-    {
-        let value = value.into();
-        self.remove(&value);
-        self.data.insert(0, value);
-        self.data.truncate(self.max_items);
-        self.is_changed = true;
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 
     // THOUGHT: Is there a way of taking a &V: Into<&MRUEntry> instead, so that this method
@@ -59,6 +52,17 @@ impl<T> MRUList<T>
             self.data.remove(pos);
             self.is_changed = true;
         }
+    }
+
+    /// Adds a value into the MRUList. `value` is now the first item in the list.
+    pub fn insert<V>(&mut self, value: V)
+        where V: Into<T>
+    {
+        let value = value.into();
+        self.remove(&value);
+        self.data.insert(0, value);
+        self.data.truncate(self.max_items);
+        self.is_changed = true;
     }
 
     pub fn iter(&self) -> MRUIterator<T> {
@@ -118,12 +122,84 @@ mod tests {
     }
 
     #[test]
-    pub fn remove_can_remove_first_item() {
+    fn new_makes_empty_mru() {
+        let mru = MRUList::<i32>::new(5);
+        assert_eq!(0, mru.len());
+        assert!(mru.is_empty());
+        assert!(!mru.is_changed());
+    }
+
+    #[test]
+    fn remove_can_remove_first_item() {
         let mut mru = make_simple_mru();
         mru.remove(&"a".to_string());
         assert!(mru.is_changed());
         assert_eq!(2, mru.len());
         assert_eq!(mru.iter().collect::<Vec<_>>(), ["b", "c"]);
     }
+
+    #[test]
+    fn remove_can_remove_last_item() {
+        let mut mru = make_simple_mru();
+        mru.remove(&"c".to_string());
+        assert!(mru.is_changed());
+        assert_eq!(2, mru.len());
+        assert_eq!(mru.iter().collect::<Vec<_>>(), ["a", "b"]);
+    }
+
+    #[test]
+    fn remove_for_item_that_is_not_in_list_is_noop() {
+        let mut mru = make_simple_mru();
+        mru.remove(&"z".to_string());
+        assert!(!mru.is_changed());
+        assert_eq!(3, mru.len());
+        assert_eq!(mru.iter().collect::<Vec<_>>(), ["a", "b", "c"]);
+    }
+
+    #[test]
+    fn insert_sets_changed_flag() {
+        let mut mru = MRUList::<i32>::new(5);
+        mru.insert(42);
+        assert!(mru.is_changed());
+    }
+
+    #[test]
+    fn insert_can_insert_exactly_max_items() {
+        let mut mru = MRUList::<i32>::new(3);
+        mru.insert(100);
+        mru.insert(200);
+        mru.insert(300);
+        assert_eq!(3, mru.len());
+        assert_eq!(300, mru[0]);
+        assert_eq!(200, mru[1]);
+        assert_eq!(100, mru[2]);
+    }
+
+    #[test]
+    fn insert_can_insert_no_more_than_max_items() {
+        let mut mru = MRUList::<i32>::new(3);
+        mru.insert(100);
+        mru.insert(200);
+        mru.insert(300);
+        mru.insert(400);
+        assert_eq!(3, mru.len());
+        assert_eq!(400, mru[0]);
+        assert_eq!(300, mru[1]);
+        assert_eq!(200, mru[2]);
+    }
+
+    #[test]
+    fn iter_iterates_items_in_order() {
+        let mut mru = MRUList::<i32>::new(3);
+        mru.insert(100);
+        mru.insert(200);
+        mru.insert(300);
+        let mut it = mru.iter();
+        assert_eq!(Some(&300), it.next());
+        assert_eq!(Some(&200), it.next());
+        assert_eq!(Some(&100), it.next());
+        assert_eq!(None, it.next());
+    }
+
 }
 
