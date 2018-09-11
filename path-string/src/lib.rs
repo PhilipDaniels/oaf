@@ -73,6 +73,12 @@ fn encode_os(s: &OsStr) -> String {
 }
 
 #[cfg(windows)]
+fn bytes_to_u16(b1: u8, b2: u8) -> u16 {
+    let result = ((b1 as u16) << 8) + b2 as u16;
+    result
+}
+
+#[cfg(windows)]
 fn decode_os(bytes: &[u8]) -> OsString {
     use std::os::windows::ffi::OsStringExt;
 
