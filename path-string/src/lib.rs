@@ -67,7 +67,7 @@ fn u16_slice_to_byte_array(wides: &[u16]) -> Vec<u8> {
 fn encode_os(s: &OsStr) -> String {
     use std::os::windows::ffi::OsStrExt;
 
-    let wide_chars = s.encode_wide().collect();
+    let wide_chars = s.encode_wide().collect::<Vec<_>>();
     let bytes = u16_slice_to_byte_array(&wide_chars);
     encode_bytes(bytes)
 }
@@ -86,7 +86,7 @@ fn decode_os(bytes: &[u8]) -> OsString {
     let mut i = 0;
     while i < bytes.len() {
         let wide = bytes_to_u16(bytes[i], bytes[i + 1]);
-        wides.push(wide);
+        wide_chars.push(wide);
         i += 2;
     }
 
