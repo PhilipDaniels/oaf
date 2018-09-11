@@ -38,11 +38,35 @@ fn encode_os(s: &OsStr) -> String {
     encode_bytes(bytes)
 }
 
+#[cfg(windows)]
+fn encode_os(s: &OsStr) -> String {
+    use std::os::windows::ffi::OsStrExt;
+
+    let wide_chars = s.encode_wide().collect::<Vec<_>>();
+    let bytes = u16_slice_to_byte_array(&wide_chars);
+    encode_bytes(&bytes)
+}
+
 #[cfg(unix)]
 fn decode_os(bytes: Vec<u8>) -> OsString {
     use std::os::unix::ffi::OsStringExt;
     
     OsString::from_vec(bytes)
+}
+
+#[cfg(windows)]
+fn decode_os(bytes: Vec<u8>) -> OsString {
+    use std::os::windows::ffi::OsStringExt;
+
+    let mut wide_chars = Vec::with_capacity(bytes.len() / 2);
+    let mut i = 0;
+    while i < bytes.len() {
+        let wide = bytes_to_u16(bytes[i], bytes[i + 1]);
+        wide_chars.push(wide);
+        i += 2;
+    }
+
+    OsString::from_wide(&wide_chars)
 }
 
 #[cfg(windows)]
@@ -64,33 +88,9 @@ fn u16_slice_to_byte_array(wides: &[u16]) -> Vec<u8> {
 }
 
 #[cfg(windows)]
-fn encode_os(s: &OsStr) -> String {
-    use std::os::windows::ffi::OsStrExt;
-
-    let wide_chars = s.encode_wide().collect::<Vec<_>>();
-    let bytes = u16_slice_to_byte_array(&wide_chars);
-    encode_bytes(&bytes)
-}
-
-#[cfg(windows)]
 fn bytes_to_u16(b1: u8, b2: u8) -> u16 {
     let result = ((b1 as u16) << 8) + b2 as u16;
     result
-}
-
-#[cfg(windows)]
-fn decode_os(bytes: &[u8]) -> OsString {
-    use std::os::windows::ffi::OsStringExt;
-
-    let mut wide_chars = Vec::with_capacity(bytes.len() / 2);
-    let mut i = 0;
-    while i < bytes.len() {
-        let wide = bytes_to_u16(bytes[i], bytes[i + 1]);
-        wide_chars.push(wide);
-        i += 2;
-    }
-
-    OsString::from_wide(&wide_chars)
 }
 
 pub fn path_to_path_string<P>(p: P) -> String
@@ -113,7 +113,7 @@ pub fn path_string_to_path_buf<S>(s: S) -> PathBuf
     let s = s.as_ref();
     if s.starts_with(PREFIX) {
         let bytes = decode_bytes(s);
-        let os_str = decode_os(&bytes);
+        let os_str = decode_os(bytes);
         PathBuf::from(os_str)
     } else {
         PathBuf::from(s)
@@ -197,7 +197,7 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn path_to_path_string_for_invalid_utf16() {
-        let os = decode_os(INVALID_UTF16_BYTE_SEQUENCE);
+        let os = decode_os(INVALID_UTF16_BYTE_SEQUENCE.to_vec());
         let pb = PathBuf::from(os);
         let s = path_to_path_string(&pb);
         assert_eq!(s, "//b64_SGRkbG/A", "Invalid UTF-16 byte sequences should be base-64 encoded.");
