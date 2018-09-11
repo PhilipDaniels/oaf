@@ -60,7 +60,7 @@ fn decode_os(bytes: Vec<u8>) -> OsString {
 
     let mut wide_chars = Vec::with_capacity(bytes.len() / 2);
     let mut i = 0;
-    while i < bytes.len() {
+    while i < bytes.len() - 1 {
         let wide = bytes_to_u16(bytes[i], bytes[i + 1]);
         wide_chars.push(wide);
         i += 2;
@@ -201,7 +201,7 @@ mod tests {
         let os = decode_os(bytes);
         let pb = PathBuf::from(os);
         let s = path_to_path_string(&pb);
-        assert_eq!(s, "//b64_SGRkbG/A", "Invalid UTF-16 byte sequences should be base-64 encoded.");
+        assert_eq!(s, "//b64_AEgAZQBsAGwAb9gAAEg=", "Invalid UTF-16 byte sequences should be base-64 encoded.");
         let pb2 = path_string_to_path_buf(&s);
         assert_eq!(pb2, pb, "Invalid UTF-16 byte sequences should be round-trippable.");
     }
