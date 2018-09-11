@@ -69,7 +69,7 @@ fn encode_os(s: &OsStr) -> String {
 
     let wide_chars = s.encode_wide().collect::<Vec<_>>();
     let bytes = u16_slice_to_byte_array(&wide_chars);
-    encode_bytes(bytes)
+    encode_bytes(&bytes)
 }
 
 #[cfg(windows)]
@@ -113,7 +113,7 @@ pub fn path_string_to_path_buf<S>(s: S) -> PathBuf
     let s = s.as_ref();
     if s.starts_with(PREFIX) {
         let bytes = decode_bytes(s);
-        let os_str = decode_os(bytes);
+        let os_str = decode_os(&bytes);
         PathBuf::from(os_str)
     } else {
         PathBuf::from(s)
