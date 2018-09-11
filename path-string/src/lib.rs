@@ -197,7 +197,8 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn path_to_path_string_for_invalid_utf16() {
-        let os = decode_os(INVALID_UTF16_BYTE_SEQUENCE.to_vec());
+        let bytes = u16_slice_to_byte_array(&INVALID_UTF16_BYTE_SEQUENCE);
+        let os = decode_os(bytes);
         let pb = PathBuf::from(os);
         let s = path_to_path_string(&pb);
         assert_eq!(s, "//b64_SGRkbG/A", "Invalid UTF-16 byte sequences should be base-64 encoded.");
