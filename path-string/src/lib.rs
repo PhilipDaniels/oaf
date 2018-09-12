@@ -106,15 +106,6 @@ pub fn path_to_path_string<P>(p: P) -> String
     }
 
     encode_os(p.as_os_str())
-
-//    match p.to_str() {
-//        Some(s) => if should_be_encoded(s) {
-//                        encode_os(p.as_os_str())
-//                   } else {
-//                        s.to_string()   // This is the case where we want to use Cow. Should be nominal.
-//                   },
-//        None => encode_os(p.as_os_str())
-//    }
 }
 
 pub fn path_string_to_path_buf<S>(s: S) -> PathBuf
@@ -173,7 +164,7 @@ mod tests {
     const INVALID_UTF16_BYTE_SEQUENCE: [u16; 7] = [0x48, 0x65, 0x6c, 0x6c, 0x6f, 0xd800, 0x48]; // "Hello\u{d800}H"
 
     #[test]
-    fn path_to_path_string_for_valid_utf8() {
+    fn path_to_path_string_for_utf8_which_does_not_need_encoding() {
         let pb = PathBuf::new();
         let s = path_to_path_string(&pb);
         assert_eq!(s, "", "Empty paths should be empty strings.");
@@ -185,10 +176,28 @@ mod tests {
         assert_eq!(s, "hello", "Valid UTF-8 paths without control chars should be encoded as-is.");
         let pb2 = path_string_to_path_buf(&s);
         assert_eq!(pb2, pb, "Valid UTF-8 paths without control chars should be round-trippable.");
+    }
 
+    #[cfg(unix)]
+    #[test]
+    fn path_to_path_string_for_valid_utf8_needing_unix_encoding() {
+        // There are separate Unix and Windows tests because on Windows a valid UTF-8 string
+        // will still be treated as UTF-16 wide chars by the time it is encoded.
         let pb = PathBuf::from("hello\tworld");
         let s = path_to_path_string(&pb);
         assert_eq!(s, "//b64_aGVsbG8Jd29ybGQ=", "Paths with control characters in them should be base-64 encoded.");
+        let pb2 = path_string_to_path_buf(&s);
+        assert_eq!(pb2, pb, "Paths with control characters in them should be round-trippable.");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn path_to_path_string_for_valid_utf8_needing_windows_encoding() {
+        // There are separate Unix and Windows tests because on Windows a valid UTF-8 string
+        // will still be treated as UTF-16 wide chars by the time it is encoded.
+        let pb = PathBuf::from("hello\tworld");
+        let s = path_to_path_string(&pb);
+        assert_eq!(s, "//b64_AGgAZQBsAGwAbwAJAHcAbwByAGwAZA==", "Paths with control characters in them should be base-64 encoded.");
         let pb2 = path_string_to_path_buf(&s);
         assert_eq!(pb2, pb, "Paths with control characters in them should be round-trippable.");
     }
