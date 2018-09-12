@@ -123,7 +123,7 @@ pub fn path_string_to_path_buf<S>(s: S) -> PathBuf
 
 #[cfg(test)]
 mod tests {
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
     use super::*;
     //use super::PathString::*;
 
@@ -137,6 +137,7 @@ mod tests {
     //     0xf5 (245) to 0xff (255) inclusive
     //
     // Therefore sequence including such bytes will be valid paths but not a valid Rust String.
+    #[cfg(unix)]
     const INVALID_UTF8_BYTE_SEQUENCE: [u8; 6] = [0x48, 0x64, 0x64, 0x6c, 0x6f, 0xc0];
 
     // On Windows, the following characters are invalid in filenames according to
@@ -161,6 +162,7 @@ mod tests {
     // This is an invalid byte sequence according to http://unicode.org/faq/utf_bom.html#utf16-7
     // path.display() works, and prints "Hello\u{d800}H", but path.to_str() will return None.
     // Windows will accept this as a valid path, but it is not a valid Rust String.
+    #[cfg(windows)]
     const INVALID_UTF16_BYTE_SEQUENCE: [u16; 7] = [0x48, 0x65, 0x6c, 0x6c, 0x6f, 0xd800, 0x48]; // "Hello\u{d800}H"
 
     #[test]
@@ -185,7 +187,8 @@ mod tests {
         // will still be treated as UTF-16 wide chars by the time it is encoded.
         let pb = PathBuf::from("hello\tworld");
         let s = path_to_path_string(&pb);
-        assert_eq!(s, "//b64_aGVsbG8Jd29ybGQ=", "Paths with control characters in them should be base-64 encoded.");
+        assert_eq!(s, format!("{}aGVsbG8Jd29ybGQ=", PREFIX),
+            "Paths with control characters in them should be base-64 encoded.");
         let pb2 = path_string_to_path_buf(&s);
         assert_eq!(pb2, pb, "Paths with control characters in them should be round-trippable.");
     }
@@ -197,7 +200,8 @@ mod tests {
         // will still be treated as UTF-16 wide chars by the time it is encoded.
         let pb = PathBuf::from("hello\tworld");
         let s = path_to_path_string(&pb);
-        assert_eq!(s, "//b64_AGgAZQBsAGwAbwAJAHcAbwByAGwAZA==", "Paths with control characters in them should be base-64 encoded.");
+        assert_eq!(s, format!("{}AGgAZQBsAGwAbwAJAHcAbwByAGwAZA==", PREFIX),
+            "Paths with control characters in them should be base-64 encoded.");
         let pb2 = path_string_to_path_buf(&s);
         assert_eq!(pb2, pb, "Paths with control characters in them should be round-trippable.");
     }
@@ -208,7 +212,8 @@ mod tests {
         let os = decode_os(INVALID_UTF8_BYTE_SEQUENCE.to_vec());
         let pb = PathBuf::from(os);
         let s = path_to_path_string(&pb);
-        assert_eq!(s, "//b64_SGRkbG/A", "Invalid UTF-8 byte sequences should be base-64 encoded.");
+        assert_eq!(s, format!("{}SGRkbG/A", PREFIX),
+            "Invalid UTF-8 byte sequences should be base-64 encoded.");
         let pb2 = path_string_to_path_buf(&s);
         assert_eq!(pb2, pb, "Invalid UTF-8 byte sequences should be round-trippable.");
     }
@@ -220,7 +225,8 @@ mod tests {
         let os = decode_os(bytes);
         let pb = PathBuf::from(os);
         let s = path_to_path_string(&pb);
-        assert_eq!(s, "//b64_AEgAZQBsAGwAb9gAAEg=", "Invalid UTF-16 byte sequences should be base-64 encoded.");
+        assert_eq!(s, format!("{}AEgAZQBsAGwAb9gAAEg=", PREFIX),
+            "Invalid UTF-16 byte sequences should be base-64 encoded.");
         let pb2 = path_string_to_path_buf(&s);
         assert_eq!(pb2, pb, "Invalid UTF-16 byte sequences should be round-trippable.");
     }
