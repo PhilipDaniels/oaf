@@ -97,14 +97,24 @@ pub fn path_to_path_string<P>(p: P) -> String
     where P: AsRef<Path>
 {
     let p = p.as_ref();
-    match p.to_str() {
-        Some(s) => if should_be_encoded(s) {
-                        encode_bytes(s.as_bytes())
-                   } else {
-                        s.to_string()   // This is the case where we want to use Cow. Should be nominal.
-                   },
-        None => encode_os(p.as_os_str())
+
+    if let Some(s) = p.to_str() {
+        if !should_be_encoded(s) {
+            // This is the case where we want to use Cow. Should be nominal.
+            return s.to_string();
+        }
     }
+
+    encode_os(p.as_os_str())
+
+//    match p.to_str() {
+//        Some(s) => if should_be_encoded(s) {
+//                        encode_os(p.as_os_str())
+//                   } else {
+//                        s.to_string()   // This is the case where we want to use Cow. Should be nominal.
+//                   },
+//        None => encode_os(p.as_os_str())
+//    }
 }
 
 pub fn path_string_to_path_buf<S>(s: S) -> PathBuf
