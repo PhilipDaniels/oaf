@@ -100,7 +100,7 @@ pub fn path_to_path_string<P>(p: P) -> String
 
     if let Some(s) = p.to_str() {
         if !should_be_encoded(s) {
-            // TODO: This is the case where we want to use Cow. Should be nominal.
+            // TODsO: This is the case where we want to use Cow. Should be nominal.
             return s.to_string();
         }
     }
