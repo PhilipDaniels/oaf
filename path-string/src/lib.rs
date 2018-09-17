@@ -1,12 +1,12 @@
 extern crate base64;
 
-//use std::borrow::Cow;
+use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use std::ffi::{OsStr, OsString};
 
 //type PathString<'a> = Cow<'a, str>;
 
-const PREFIX: &'static str = "//b64_";
+const PREFIX: &str = "//b64_";
 
 fn should_be_encoded(s: &str) -> bool
 {
@@ -93,19 +93,18 @@ fn bytes_to_u16(b1: u8, b2: u8) -> u16 {
     result
 }
 
-pub fn path_to_path_string<P>(p: P) -> String
+pub fn path_to_path_string<P>(p: &P) -> Cow<str>
     where P: AsRef<Path>
 {
     let p = p.as_ref();
 
     if let Some(s) = p.to_str() {
         if !should_be_encoded(s) {
-            // TODO: This is the case where we want to use Cow. Should be nominal.
-            return s.to_string();
+            return Cow::Borrowed(s);
         }
     }
 
-    encode_os(p.as_os_str())
+    Cow::Owned(encode_os(p.as_os_str()))
 }
 
 pub fn path_string_to_path_buf<S>(s: S) -> PathBuf
