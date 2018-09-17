@@ -1,4 +1,5 @@
 extern crate path_string;
+extern crate separator;
 
 use std::io;
 use std::io::prelude::*;
@@ -6,6 +7,7 @@ use std::ffi::OsString;
 use std::os::unix::ffi::OsStringExt;
 use std::path::PathBuf;
 use std::borrow::Cow;
+use separator::Separatable;
 
 struct PathRequiringEncoding {
     original_path: PathBuf,
@@ -14,13 +16,14 @@ struct PathRequiringEncoding {
 
 // Recommended usage     : find DIR -print0 | target/release/pathtest
 // Scan your whole drive : sudo find / -print0 | target/release/pathtest
-//
+
 fn main() {
     println!("Counting paths according to base64 encoding needs.");
 
     let stdin = io::stdin();
-    let mut num_borrowed: usize = 0;
-    let mut num_encoded: usize = 0;
+    let mut total_paths = 0;
+    let mut num_borrowed = 0;
+    let mut num_encoded = 0;
     let mut paths_needing_encoding = Vec::new();
 
     for p in stdin.lock().split(0).take(2_000_000) {
@@ -30,6 +33,8 @@ fn main() {
         //println!("Reading os = {:?}", os);
         let pb = PathBuf::from(os);
         let coded = path_string::path_to_path_string(&pb);
+
+        total_paths += 1;
 
         match coded {
             Cow::Borrowed(_s) => num_borrowed += 1,
@@ -47,7 +52,7 @@ fn main() {
             }
         }
 
-        if (num_borrowed + num_encoded) % 1000 == 0 {
+        if total_paths % 1000 == 0 {
             print_msg(num_borrowed, num_encoded);
 
         }
@@ -57,11 +62,10 @@ fn main() {
     println!("Counting complete.");
 
     if num_encoded > 0 {
-        let total_paths = num_borrowed + num_encoded;
         let percentage = 100f64 * num_encoded as f64 / total_paths as f64;
 
-        println!("\n{} out of {} paths needed encoding (and were successfully round-tripped.)",
-                 num_encoded, total_paths);
+        println!("\n{} out of {} paths needed encoding (and were successfully round-tripped).",
+                 num_encoded, total_paths.separated_string());
         println!("This represents {}% of the total path count.\n", percentage);
 
         for pre in paths_needing_encoding {
