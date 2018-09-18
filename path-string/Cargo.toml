@@ -6,4 +6,5 @@ authors = ["Philip Daniels <Philip.Daniels1971@gmail.com>"]
 [dependencies]
 base64 = "0.9"
 separator = "0.3.1"
+walkdir = "2"
 
