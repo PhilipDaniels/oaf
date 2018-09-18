@@ -37,7 +37,8 @@ fn main() {
             Cow::Borrowed(_s) => num_borrowed += 1,
             Cow::Owned(encoded_path) => {
                 num_encoded += 1;
-                let round_tripped = path_string::path_string_to_path_buf(&encoded_path);
+                let round_tripped = path_string::path_string_to_path_buf(&encoded_path)
+                    .expect("Decoding the encoded string should always work in this program.");
                 println!("  Found a path requiring encoding: {:?}", pb);
                 println!("  Encoded form is                : {:?}", encoded_path);
                 println!("  Round tripped back to path is  : {:?}", round_tripped);

@@ -40,11 +40,12 @@ fn encode_bytes(bytes: &[u8]) -> String {
 }
 
 /// A small wrapper around the 'decode' call to the base64 library to ensure
-/// we do it the same way every time.
-fn decode_bytes(encoded_str: &str) -> Vec<u8> {
+/// we do it the same way every time. The decode will not fail unless the
+/// previously encoded string is messed with in some way, but that is a
+/// distinct possibility in human-editable files, either by malice or misfortune.
+fn decode_bytes(encoded_str: &str) -> Result<Vec<u8>, base64::DecodeError> {
     let encoded_bytes = &encoded_str[PREFIX.len()..];
-    let bytes = base64::decode_config(encoded_bytes, base64::STANDARD)
-        .expect("FIXME: The conversion might fail because a user might edit the encoded data incorrectly.");
+    let bytes = base64::decode_config(encoded_bytes, base64::STANDARD);
     bytes
 }
 
@@ -125,16 +126,16 @@ pub fn path_to_path_string<P>(p: &P) -> Cow<str>
     Cow::Owned(encode_os(p.as_os_str()))
 }
 
-pub fn path_string_to_path_buf<S>(s: S) -> PathBuf
+pub fn path_string_to_path_buf<S>(s: S) -> Result<PathBuf, base64::DecodeError>
     where S: AsRef<str>
 {
     let s = s.as_ref();
     if s.starts_with(PREFIX) {
-        let bytes = decode_bytes(s);
+        let bytes = decode_bytes(s)?;
         let os_str = decode_os(bytes);
-        PathBuf::from(os_str)
+        Ok(PathBuf::from(os_str))
     } else {
-        PathBuf::from(s)
+        Ok(PathBuf::from(s))
     }
 }
 
