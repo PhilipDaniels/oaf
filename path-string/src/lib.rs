@@ -154,8 +154,9 @@ mod tests {
     //     0xf5 (245) to 0xff (255) inclusive
     //
     // Therefore sequence including such bytes will be valid paths but not a valid Rust String.
+    // This is "Hello" followed by an invalid byte.
     #[cfg(unix)]
-    const INVALID_UTF8_BYTE_SEQUENCE: [u8; 6] = [0x48, 0x64, 0x64, 0x6c, 0x6f, 0xc0];
+    const INVALID_UTF8_BYTE_SEQUENCE: [u8; 6] = [0x48, 0x65, 0x6c, 0x6c, 0x6f, 0xc0];
 
     // On Windows, the following characters are invalid in filenames according to
     // https://docs.microsoft.com/en-us/windows/desktop/fileio/naming-a-file
