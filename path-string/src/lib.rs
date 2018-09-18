@@ -4,10 +4,28 @@ use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use std::ffi::{OsStr, OsString};
 
-//type PathString<'a> = Cow<'a, str>;
+/// Drive letters must be A-Z, single character only. Therefore this
+/// always represents an invalid path (note also that ':' is illegal in Windows paths).
+#[cfg(windows)]
+const PREFIX: &str = "b64:\\_";
 
-const PREFIX: &str = "//b64_";
+/// On Unix, filenames can contain any byte except '\0' and '/', which makes formulating
+/// an impossible filename very difficult (since we can't use a zero-byte in a printable
+/// string and '/' is the usual directory separator). You can even use filenames such as
+/// '/../../b64' in the shell and File::create() and they work ok because the '..' file
+/// in the root directory is a link back to the root directory making it impossible to
+/// 'escape' the filesystem (very clever, Unix guys).
+/// However, you cannot have a file under '/dev/null' because it is defined as a file
+/// in POSIX! http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap10.html
+/// Therefore any path beginning with '/dev/null' will be an invalid path.
+/// Baldrick levels of cunning going on here.
+#[cfg(not(windows))]
+const PREFIX: &str = "/dev/null/b64_";
 
+
+/// Even if a Path can be converted to a valid UTF-8 string we still might want
+/// to encode it: it's difficult to write filenames with newlines or '\b' in a sensible
+/// manner, for example.
 fn should_be_encoded(s: &str) -> bool
 {
     s.chars().any(|c| c.is_control())
@@ -70,6 +88,12 @@ fn decode_os(bytes: Vec<u8>) -> OsString {
 }
 
 #[cfg(windows)]
+fn bytes_to_u16(b1: u8, b2: u8) -> u16 {
+    let result = ((b1 as u16) << 8) + b2 as u16;
+    result
+}
+
+#[cfg(windows)]
 fn u16_to_bytes(value: u16) -> [u8; 2] {
     let b1: u8 = ((value >> 8) & 0xff) as u8;
     let b2: u8 = (value & 0xff) as u8;
@@ -85,12 +109,6 @@ fn u16_slice_to_byte_array(wides: &[u16]) -> Vec<u8> {
         bytes.push(a[1]);
     }
     bytes
-}
-
-#[cfg(windows)]
-fn bytes_to_u16(b1: u8, b2: u8) -> u16 {
-    let result = ((b1 as u16) << 8) + b2 as u16;
-    result
 }
 
 pub fn path_to_path_string<P>(p: &P) -> Cow<str>
@@ -154,7 +172,7 @@ mod tests {
     //
     // However, note that these are all printable characters.
     // Windows also bans bytes 0..31 (the ASCII control characters) - so no
-    // tabs, bells or newlines in files.
+    // tabs, bells or newlines in filenames.
     //
     // On Windows, paths are UTF-16-le, not UTF-8. So we need to make a UTF-16
     // string that is not a valid UTF-8 string.
