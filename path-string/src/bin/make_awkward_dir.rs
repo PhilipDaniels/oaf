@@ -27,29 +27,24 @@ fn decode_os(bytes: Vec<u8>) -> OsString {
 }
 
 #[cfg(windows)]
-fn u16_to_bytes(value: u16) -> [u8; 2] {
-    let b1: u8 = ((value >> 8) & 0xff) as u8;
-    let b2: u8 = (value & 0xff) as u8;
-    return [b1, b2]
+fn bytes_to_u16(b1: u8, b2: u8) -> u16 {
+    let result = ((b1 as u16) << 8) + b2 as u16;
+    result
 }
 
-
 #[cfg(unix)]
-fn value_to_bytes(i: i32) -> Vec<u8> {
-    let mut bytes = vec![];
-    bytes.push(i as u8);
-    bytes
+fn value_to_bytes(i: u16) -> Vec<u8> {
+    vec![i as u8]
 }
 
 #[cfg(windows)]
-fn value_to_bytes(i: i32) -> Vec<u8> {
-    let mut bytes = vec![];
-    let pair = u16_to_bytes(i as u16);
-    bytes.push(pair[0], pair[1]);
-    bytes
+fn value_to_bytes(i: u16) -> Vec<u8> {
+    let b1 = ((i >> 8) & 0xff) as u8;
+    let b2 = (i & 0xff) as u8;
+    vec![b1, b2]
 }
 
-fn value_to_pathbuf(dir: &Path, i: i32) -> PathBuf {
+fn value_to_pathbuf(dir: &Path, i: u16) -> PathBuf {
     let bytes = value_to_bytes(i);
     let os = decode_os(bytes);
     let mut p = dir.to_path_buf();
@@ -58,15 +53,13 @@ fn value_to_pathbuf(dir: &Path, i: i32) -> PathBuf {
     p
 }
 
-
-fn create_files(min: i32, max: i32) {
+fn create_files(min: u16, max: u16) {
     let dir = Path::new("awkward");
     if !dir.exists() {
         fs::create_dir(&dir).unwrap();
     }
 
-    for i in min..max {
-        println!("Creating file for value {}", i);
+    for i in min..=max {
         let filename = value_to_pathbuf(&dir, i);
         match fs::File::create(filename) {
             Err(_e) => println!("Could not create file for {}", i),
@@ -77,7 +70,7 @@ fn create_files(min: i32, max: i32) {
 
 #[cfg(unix)]
 fn main() {
-    create_files(1, 256);
+    create_files(1, 255);
 }
 
 #[cfg(windows)]
