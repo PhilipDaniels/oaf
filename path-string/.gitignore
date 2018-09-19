@@ -1,6 +1,7 @@
 Cargo.lock
 /target/
 **/*.rs.bk
+awkward
 
 # User-specific stuff:
 .idea/**/workspace.xml

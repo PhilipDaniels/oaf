@@ -119,7 +119,7 @@ pub fn path_to_path_string<P>(p: &P) -> Cow<str>
 
     if let Some(s) = p.to_str() {
         if !should_be_encoded(s) {
-            return Cow::Borrowed(s);
+            Cow::Borrowed(s);
         }
     }
 
