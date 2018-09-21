@@ -45,8 +45,7 @@ fn encode_bytes(bytes: &[u8]) -> String {
 /// distinct possibility in human-editable files, either by malice or misfortune.
 fn decode_bytes(encoded_str: &str) -> Result<Vec<u8>, base64::DecodeError> {
     let encoded_bytes = &encoded_str[PREFIX.len()..];
-    let bytes = base64::decode_config(encoded_bytes, base64::STANDARD);
-    bytes
+    base64::decode_config(encoded_bytes, base64::STANDARD)
 }
 
 #[cfg(unix)]
@@ -119,7 +118,7 @@ pub fn path_to_path_string<P>(p: &P) -> Cow<str>
 
     if let Some(s) = p.to_str() {
         if !should_be_encoded(s) {
-            Cow::Borrowed(s);
+            return Cow::Borrowed(s);
         }
     }
 

@@ -61,9 +61,8 @@ fn create_files(min: u16, max: u16) {
 
     for i in min..=max {
         let filename = value_to_pathbuf(&dir, i);
-        match fs::File::create(filename) {
-            Err(_e) => println!("Could not create file for {}", i),
-            Ok(_) => {},
+        if let Err(_e) = fs::File::create(filename) {
+            println!("Could not create file for {}", i);
         }
     }
 }

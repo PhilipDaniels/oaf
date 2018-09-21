@@ -61,7 +61,7 @@ fn main() {
     println!("Counting complete.");
 
     if num_encoded > 0 {
-        let percentage = 100f64 * num_encoded as f64 / total_paths as f64;
+        let percentage = 100f64 * num_encoded as f64 / f64::from(total_paths);
 
         println!("\n{} out of {} paths needed encoding (and were successfully round-tripped).",
                  num_encoded, total_paths.separated_string());
