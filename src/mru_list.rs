@@ -66,8 +66,7 @@ impl<T> MRUList<T>
     }
 
     pub fn iter(&self) -> MRUIterator<T> {
-        let it = MRUIterator { data: &self.data, next: 0 };
-        it
+        MRUIterator { data: &self.data, next: 0 }
     }
 }
 
