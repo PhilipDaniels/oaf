@@ -1,4 +1,4 @@
-extern crate path_string;
+extern crate path_encoding;
 
 use std::path::{Path, PathBuf};
 use std::fs;

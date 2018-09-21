@@ -1,5 +1,5 @@
 [package]
-name = "path-string"
+name = "path-encoding"
 version = "0.1.0"
 authors = ["Philip Daniels <Philip.Daniels1971@gmail.com>"]
 
