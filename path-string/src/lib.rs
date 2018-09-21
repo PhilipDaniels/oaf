@@ -111,7 +111,15 @@ fn u16_slice_to_byte_array(wides: &[u16]) -> Vec<u8> {
     bytes
 }
 
-pub fn path_to_path_string<P>(p: &P) -> Cow<str>
+/// Converts the Path 'P' to a string which can be safely written to a file
+/// irrespective of whether the original Path contains unprintable characters
+/// or is an invalid UTF-8 string. If the Path is a valid UTF-8 string and
+/// contains no control characters such as '\t\ it is returned as-is, otherwise
+/// it is encoded as a Base-64 string and given a special prefix which means
+/// the resultant string can be unambiguously detected as an encoded path rather
+/// than an actual path. This conversion can be reversed using the
+/// `decode_path` function.
+pub fn encode_path<P>(p: &P) -> Cow<str>
     where P: AsRef<Path>
 {
     let p = p.as_ref();
@@ -125,7 +133,12 @@ pub fn path_to_path_string<P>(p: &P) -> Cow<str>
     Cow::Owned(encode_os(p.as_os_str()))
 }
 
-pub fn path_string_to_path_buf<S>(s: S) -> Result<PathBuf, base64::DecodeError>
+/// Reverses the encoding of a Path performed by `encode_path`. This function
+/// should always be used to reverse the encoding, as it will correctly detect
+/// whether the string 'S' is an actual path or one that was Base-64 encoded.
+/// The function will only return an error if the Path was the Base-64 encoded
+/// form and the encoding has been tampered with.
+pub fn decode_path<S>(s: S) -> Result<PathBuf, base64::DecodeError>
     where S: AsRef<str>
 {
     let s = s.as_ref();
@@ -142,7 +155,6 @@ pub fn path_string_to_path_buf<S>(s: S) -> Result<PathBuf, base64::DecodeError>
 mod tests {
     use std::path::PathBuf;
     use super::*;
-    //use super::PathString::*;
 
     // On Unix, only the '\0' and '/' are invalid in filenames but any
     // other byte sequence is valid.
@@ -184,36 +196,36 @@ mod tests {
     const INVALID_UTF16_BYTE_SEQUENCE: [u16; 7] = [0x48, 0x65, 0x6c, 0x6c, 0x6f, 0xd800, 0x48]; // "Hello\u{d800}H"
 
     #[test]
-    fn path_to_path_string_for_utf8_which_does_not_need_encoding() {
+    fn for_utf8_which_does_not_need_encoding() {
         let pb = PathBuf::new();
-        let s = path_to_path_string(&pb);
+        let s = encode_path(&pb);
         assert_eq!(s, "", "Empty paths should be empty strings.");
-        let pb2 = path_string_to_path_buf(&s);
+        let pb2 = decode_path(&s).unwrap();
         assert_eq!(pb2, pb, "Empty paths should be round-trippable.");
 
         let pb = PathBuf::from("hello");
-        let s = path_to_path_string(&pb);
+        let s = encode_path(&pb);
         assert_eq!(s, "hello", "Valid UTF-8 paths without control chars should be encoded as-is.");
-        let pb2 = path_string_to_path_buf(&s);
+        let pb2 = decode_path(&s).unwrap();
         assert_eq!(pb2, pb, "Valid UTF-8 paths without control chars should be round-trippable.");
     }
 
     #[cfg(unix)]
     #[test]
-    fn path_to_path_string_for_valid_utf8_needing_unix_encoding() {
+    fn for_valid_utf8_needing_unix_encoding() {
         // There are separate Unix and Windows tests because on Windows a valid UTF-8 string
         // will still be treated as UTF-16 wide chars by the time it is encoded.
         let pb = PathBuf::from("hello\tworld");
-        let s = path_to_path_string(&pb);
+        let s = encode_path(&pb);
         assert_eq!(s, format!("{}aGVsbG8Jd29ybGQ=", PREFIX),
             "Paths with control characters in them should be base-64 encoded.");
-        let pb2 = path_string_to_path_buf(&s);
+        let pb2 = decode_path(&s).unwrap();
         assert_eq!(pb2, pb, "Paths with control characters in them should be round-trippable.");
     }
 
     #[cfg(windows)]
     #[test]
-    fn path_to_path_string_for_valid_utf8_needing_windows_encoding() {
+    fn for_valid_utf8_needing_windows_encoding() {
         // There are separate Unix and Windows tests because on Windows a valid UTF-8 string
         // will still be treated as UTF-16 wide chars by the time it is encoded.
         let pb = PathBuf::from("hello\tworld");
@@ -226,104 +238,39 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn path_to_path_string_for_invalid_utf8() {
+    fn for_invalid_utf8() {
         let os = decode_os(INVALID_UTF8_BYTE_SEQUENCE.to_vec());
         let pb = PathBuf::from(os);
-        let s = path_to_path_string(&pb);
-        assert_eq!(s, format!("{}SGRkbG/A", PREFIX),
+        let s = encode_path(&pb);
+        assert_eq!(s, format!("{}SGVsbG/A", PREFIX),
             "Invalid UTF-8 byte sequences should be base-64 encoded.");
-        let pb2 = path_string_to_path_buf(&s);
+        let pb2 = decode_path(&s).unwrap();
         assert_eq!(pb2, pb, "Invalid UTF-8 byte sequences should be round-trippable.");
     }
 
     #[cfg(windows)]
     #[test]
-    fn path_to_path_string_for_invalid_utf16() {
+    fn for_invalid_utf16() {
         let bytes = u16_slice_to_byte_array(&INVALID_UTF16_BYTE_SEQUENCE);
         let os = decode_os(bytes);
         let pb = PathBuf::from(os);
-        let s = path_to_path_string(&pb);
+        let s = encode_path(&pb);
         assert_eq!(s, format!("{}AEgAZQBsAGwAb9gAAEg=", PREFIX),
             "Invalid UTF-16 byte sequences should be base-64 encoded.");
-        let pb2 = path_string_to_path_buf(&s);
+        let pb2 = decode_path(&s);
         assert_eq!(pb2, pb, "Invalid UTF-16 byte sequences should be round-trippable.");
     }
-}
 
-
-
-
-
-/*
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PathString<'a> {
-    Printable(&'a str),
-    Encoded(String)
-}
-
-use PathString::{Printable, Encoded};
-
-fn encode(s: &str) -> String 
-{
-    s.to_string()
-}
-
-fn path_to_path_string<'a>(p: &'a Path) -> PathString<'a> {
-    match p.to_str() {
-        Some(s) => { Printable(s) },
-        None => { Encoded("".to_string()) }
-    }
-}
-
-
-
-impl<'a> From<&'a Path> for PathString<'a> {
-    fn from(p: &'a Path) -> Self {
-        path_to_path_string(p)
-    }
-}
-
-impl<'a> From<&'a PathBuf> for PathString<'a> {
-    fn from(pb: &'a PathBuf) -> Self {
-        path_to_path_string(&pb)
-    }
-}
-
-impl<'a> From<String> for PathString<'a> {
-    fn from(s: String) -> Self {
-        path_to_path_string(&PathBuf::from(s))
-    }
-}
-*/
-
-/*
-#[cfg(test)]
-mod tests {
-    use std::path::{Path, PathBuf};
-    use super::*;
-    //use super::PathString::*;
-
-   
+    #[cfg(unix)]
     #[test]
-    fn from_path_converts() {
-        let pb = PathBuf::from("hello");
-        let p = pb.as_path();
-        let ps = PathString::from(p);
-        assert_eq!(Printable("hello"), ps);
-    }
-
-    #[test]
-    fn from_pathbuf_converts() {
-        let pb = PathBuf::from("hello");
-        let ps = PathString::from(&pb);
-        assert_eq!(Printable("hello"), ps);
-    }
-
-    #[test]
-    fn from_string_converts() {
-        let s = "hello".to_string();
-        let ps = PathString::from(s);
-        assert_eq!(Printable("hello"), ps);
+    fn decode_for_mangled_base64_returns_err() {
+        // Create a path that will get Base-64 encoded.
+        // \x11 is just a random control character.
+        let mut s = encode_path(&"Hello\x11world").into_owned();
+        // Mangle the encoded string, as if a user manually edited it.
+        s.push('\t');
+        let decode_attempt = decode_path(&s);
+        assert!(decode_attempt.is_err(), "Tabs are not valid in Base-64 encoded strings, so we should get an error when decoding it.");
     }
 }
-*/
+

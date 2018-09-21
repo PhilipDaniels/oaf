@@ -31,13 +31,13 @@ fn main() {
     for entry in WalkDir::new(start_dir).into_iter().filter_map(|e| e.ok()) {
         total_paths += 1;
         let pb = entry.into_path();
-        let possibly_encoded_path = path_string::path_to_path_string(&pb);
+        let possibly_encoded_path = path_string::encode_path(&pb);
 
         match possibly_encoded_path {
             Cow::Borrowed(_s) => num_borrowed += 1,
             Cow::Owned(encoded_path) => {
                 num_encoded += 1;
-                let round_tripped = path_string::path_string_to_path_buf(&encoded_path)
+                let round_tripped = path_string::decode_path(&encoded_path)
                     .expect("Decoding the encoded string should always work in this program.");
                 println!("  Found a path requiring encoding: {:?}", pb);
                 println!("  Encoded form is                : {:?}", encoded_path);
