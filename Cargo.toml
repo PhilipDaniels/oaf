@@ -12,6 +12,7 @@ serde = "1.0"
 serde_derive = "1.0"
 toml = "0.4"
 xdg = "2.1.0"
+path-encoding = { path = "path-encoding" }
 
 [build-dependencies]
 built = "0.3.0"
@@ -19,3 +20,7 @@ built = "0.3.0"
 [profile.release]
 lto = true
 
+[workspace]
+members = [
+    "path-encoding"
+]

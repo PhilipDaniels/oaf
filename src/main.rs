@@ -5,10 +5,13 @@ extern crate log4rs;
 #[macro_use] extern crate structopt;
 extern crate xdg;
 
+extern crate path_encoding;
+
 use structopt::StructOpt;
+use std::path::PathBuf;
 
 mod mru_list;
-use mru_list::MRUList;
+use mru_list::OafMruList;
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
@@ -43,7 +46,7 @@ fn main() {
         log_built_info();
     }
 
-    let mru = MRUList::<String>::new(20);
+    let mru = OafMruList::new(20);
 }
 
 fn configure_logging(base_dirs: &xdg::BaseDirectories) {
