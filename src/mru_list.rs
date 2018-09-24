@@ -1,6 +1,7 @@
 use std::cmp;
 use std::ops::Index;
-use std::io::{self, Write, BufRead};
+use std::io::{self, Write, BufRead, BufWriter, BufReader};
+use std::fs::File;
 use std::path::{Path, PathBuf};
 use path_encoding;
 
@@ -35,7 +36,7 @@ impl<T> MRUList<T>
         self.is_changed
     }
 
-    pub fn clear_is_changed_flag(&mut self) {
+    pub fn clear_is_changed(&mut self) {
         self.is_changed = false;
     }
 
@@ -124,22 +125,46 @@ impl OafMruList {
         }
     }
 
-    pub fn write(&self, writer: &mut Write) {
+    pub fn add_path_and_save<P>(&mut self, path: P) -> io::Result<()>
+        where P: AsRef<Path>
+    {
+        let path = path.as_ref().to_path_buf();
+        self.mru.insert(path);
+        self.write_to_file()
+    }
+
+    fn write_to_file(&mut self) -> io::Result<()> {
+        let file = File::create(&self.filename)?;
+        let mut writer = BufWriter::new(file);
+
         for pbuf in self.mru.iter() {
             let encoded_path = path_encoding::encode_path(&pbuf);
             writeln!(writer, "{}", encoded_path);
         }
-        info!("Wrote {} entries to the MRU list.", self.mru.len());
+
+        self.mru.clear_is_changed();
+        info!("Wrote {} entries to the MRU file {}", self.mru.len(), self.filename.display());
+        Ok(())
     }
 
-    pub fn read(&mut self, reader: &mut BufRead) -> io::Result<()> {
-        for line_result in reader.lines() {
-            let line = line_result?;
-            match path_encoding::decode_path(&line) {
-                Ok(decoded_path) => self.mru.insert(decoded_path),
-                Err(e) => warn!("Skipping undecodable MRU entry {}", line)
+    pub fn read_from_file(&mut self) -> io::Result<()> {
+        if Path::exists(&self.filename) {
+            let file = File::open(&self.filename)?;
+            let reader = BufReader::new(file);
+            for line_result in reader.lines().take(self.mru.max_items) {
+                let line = line_result?;
+                if line.trim().is_empty() { continue };
+                match path_encoding::decode_path(&line) {
+                    Ok(decoded_path) => self.mru.insert(decoded_path),
+                    Err(_) => warn!("Skipping undecodable MRU entry {}", line)
+                }
             }
+            self.mru.clear_is_changed();
+            info!("Read {} MRU entries from {}", self.mru.len(), self.filename.display());
+        } else {
+            info!("No MRU list loaded because the expected MRU file {} does not exist.", self.filename.display());
         }
+
         Ok(())
     }
 }
@@ -154,7 +179,7 @@ mod tests {
         mru.insert("c");
         mru.insert("b");
         mru.insert("a");
-        mru.clear_is_changed_flag();
+        mru.clear_is_changed();
         mru
     }
 

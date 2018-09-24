@@ -46,8 +46,9 @@ fn main() {
         log_built_info();
     }
 
-    let mru_file = base_dirs.place_config_file("mru.toml").unwrap();
-    let mru = OafMruList::new(&mru_file);
+    let mru_file = base_dirs.place_config_file("mru.txt").unwrap();
+    let mut mru = OafMruList::new(&mru_file);
+    mru.read_from_file();
 }
 
 fn configure_logging(base_dirs: &xdg::BaseDirectories) {
