@@ -29,7 +29,16 @@ Our cases are:
 
 1 and 2 we can handle with the previous macros.
 4 might be acceptable to start with, but 3 is better.
+It appears we can do this by just adding a message() function that implements the formatting trick.
 
+    let _timer = timer!("MyName");
+
+    let _timer2 = end_timer!("MyQuietTimer");
+    _timer2.message("Wrote {} lines to MRU file {}", num_lines, filename);
+
+// Bonus methods. Get the string that will be written.
+let msg = _timer2.display();
+_timer2.suppress_logging();
 
 */
 
@@ -38,7 +47,10 @@ Our cases are:
 // execution time was. Can be used to time functions or other critical areas.
 pub struct ExecutionTimer<'a> {
         start_time: Instant,
-        name: &'a str
+        name: &'a str,
+        units: Units // Auto, msec, usec, nsec
+        log_level: info, debug
+        log_on_drop: bool
 }
 
 impl<'a> ExecutionTimer<'a> {
