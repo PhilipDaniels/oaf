@@ -1,7 +1,7 @@
 use std::cmp;
 use std::ops::Index;
 use std::io::{self, Write, BufRead};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use path_encoding;
 
 /// A simple MRU-list data structure. Create a list of the appropriate
@@ -109,22 +109,34 @@ impl<'mru, T> IntoIterator for &'mru MRUList<T>
     }
 }
 
-pub type OafMruList = MRUList<PathBuf>;
+pub struct OafMruList {
+    filename: PathBuf,
+    mru: MRUList<PathBuf>
+}
 
 impl OafMruList {
+    pub fn new<P>(filename: P) -> Self
+        where P: AsRef<Path>
+    {
+        OafMruList {
+            filename: filename.as_ref().to_path_buf(),
+            mru: MRUList::new(20)
+        }
+    }
+
     pub fn write(&self, writer: &mut Write) {
-        for pbuf in self {
+        for pbuf in self.mru.iter() {
             let encoded_path = path_encoding::encode_path(&pbuf);
             writeln!(writer, "{}", encoded_path);
         }
-        info!("Wrote {} entries to the MRU list.", self.len());
+        info!("Wrote {} entries to the MRU list.", self.mru.len());
     }
 
     pub fn read(&mut self, reader: &mut BufRead) -> io::Result<()> {
         for line_result in reader.lines() {
             let line = line_result?;
             match path_encoding::decode_path(&line) {
-                Ok(decoded_path) => self.insert(decoded_path),
+                Ok(decoded_path) => self.mru.insert(decoded_path),
                 Err(e) => warn!("Skipping undecodable MRU entry {}", line)
             }
         }
