@@ -1,11 +1,112 @@
-use std::time::{Duration, Instant};
+use std::time;
 use std::fmt;
 use std::io::Write;
+use log;
 
 /// This module implements macros which allow blocks of code to be timed.
 /// Macros log the timings.
+#[derive(Debug, Clone)]
+pub struct Timer<'a> {
+    name: &'a str,
+    start_time: time::Instant,
+    log_level: log::Level,
+    log_on_drop: bool,
 
-pub struct ElapsedDuration(Duration);
+        //units: Units // Auto, msec, usec, nsec
+}
+
+impl<'a> Timer<'a> {
+    pub fn new(name: &'a str) -> Timer<'a> {
+        Timer {
+            name: name,
+            start_time: time::Instant::now(),
+            log_level: log::Level::Trace,
+            log_on_drop: true
+        }
+    }
+
+    /// Construct a new Timer that logs a message at the start
+    /// as well as at the end. You must specify the log level
+    /// because the first message is logged immediately.
+    pub fn bracket_timer(name: &'a str, log_level: log::Level) -> Timer<'a> {
+        let mut tmr = Self::new(name);
+        tmr.log_level = log_level;
+        tmr.output(format!("Starting {}", name));
+        tmr
+    }
+
+    /// Sets or unsets the `log_on_drop` flag for this timer.
+    /// If false, no message is logged when the timer is dropped.
+    /// This may be useful if you have taken over the output yourself.
+    pub fn log_on_drop(mut self, log_on_drop: bool) -> Self {
+        self.log_on_drop = log_on_drop;
+        self
+    }
+
+    /// Sets the logging level. The default is `Level::Trace`.
+    pub fn at_level(mut self, log_level: log::Level) -> Self {
+        self.log_level = log_level;
+        self
+    }
+
+    /// Returns the current duration the timer has been running for.
+    pub fn elapsed(&self) -> time::Duration {
+        self.start_time.elapsed()
+    }
+
+    /// Number of whole seconds elapsed.
+    pub fn seconds(&self) -> u64 {
+        self.elapsed().as_secs()
+    }
+
+    /// Number of whole milliseconds elapsed.
+    pub fn millis(&self) -> u64 {
+        self.seconds() * 1000 + self.subsec_nanos() / 1_000_000
+    }
+
+    /// Number of whole microseconds elapsed.
+    pub fn micros(&self) -> u64 {
+        self.seconds() * 1_000_000 + self.subsec_nanos() / 1_000
+    }
+
+    /// Number of whole nanoseconds elapsed.
+    pub fn nanos(&self) -> u64 {
+        self.seconds() * 1_000_000_000 + self.subsec_nanos()
+    }
+
+    fn subsec_nanos(&self) -> u64 {
+        self.elapsed().subsec_nanos() as u64
+    }
+
+
+
+
+
+
+    /// Returns the current message of the timer.
+    pub fn display(&self) -> String {
+        let elapsed = self.elapsed();
+        let secs = (elapsed.as_secs() as f64) + (elapsed.subsec_nanos() as f64 / 1000_000_000.0);
+        let msecs = secs * 1000.0;
+        format!("Completed {}, Time={:.3}", self.name, msecs)
+    }
+
+    /// Private function to log at the appropriate level.
+    fn output<S>(&self, message: S)
+        where S: AsRef<str>
+    {
+        log!(self.log_level, "{}", message.as_ref());
+    }
+}
+
+impl<'a> Drop for Timer<'a> {
+    fn drop(&mut self) {
+        if self.log_on_drop {
+            self.output(self.display());
+        }
+    }
+}
+
 
 /*
 Our cases are:
@@ -43,41 +144,9 @@ _timer2.suppress_logging();
 */
 
 /*
-// When this struct is dropped, it logs a message stating its name and how long, in seconds,
-// execution time was. Can be used to time functions or other critical areas.
-pub struct ExecutionTimer<'a> {
-        start_time: Instant,
-        name: &'a str,
-        units: Units // Auto, msec, usec, nsec
-        log_level: info, debug
-        log_on_drop: bool
-}
-
 impl<'a> ExecutionTimer<'a> {
-        pub fn new(name: &'a str) -> ExecutionTimer<'a> {
-                ExecutionTimer {
-                        start_time: Instant::now(),
-                        name: name
-                }
-        }
-
-        // Construct a new ExecutionTimer and prints a message saying execution is starting.
-        pub fn with_start_message(name: &'a str) -> ExecutionTimer<'a> {
-                debug!("Execution Starting, Name={}", name);
-                ExecutionTimer {
-                        start_time: Instant::now(),
-                        name: name
-                }
-        }
 }
 
-impl<'a> Drop for ExecutionTimer<'a> {
-        fn drop(&mut self) {
-                let elapsed = self.start_time.elapsed();
-        let secs = (elapsed.as_secs() as f64) + (elapsed.subsec_nanos() as f64 / 1000_000_000.0);
-        let msecs = secs * 1000.0;
-                debug!("Execution Completed, Name={}, MilliSecs={:.3}", self.name, msecs);
-        }
 }
 
 #[macro_use]

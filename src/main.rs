@@ -12,6 +12,8 @@ use std::path::PathBuf;
 
 mod mru_list;
 use mru_list::OafMruList;
+mod timer;
+use timer::Timer;
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
@@ -46,6 +48,7 @@ fn main() {
         log_built_info();
     }
 
+    let _timer = Timer::bracket_timer("MRU", log::Level::Warn).log_on_drop(true).at_level(log::Level::Warn);
     let mru_file = base_dirs.place_config_file("mru.txt").unwrap();
     let mut mru = OafMruList::new(&mru_file);
     mru.read_from_file();
