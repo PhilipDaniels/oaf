@@ -12,7 +12,7 @@ use std::path::PathBuf;
 
 mod mru_list;
 use mru_list::OafMruList;
-mod timer;
+#[macro_use] mod timer;
 use timer::Timer;
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
@@ -52,6 +52,16 @@ fn main() {
     let mru_file = base_dirs.place_config_file("mru.txt").unwrap();
     let mut mru = OafMruList::new(&mru_file);
     mru.read_from_file();
+    println!("First {}", _timer);
+    _timer.set_message("Read 15 things from a file.");
+    _timer.append_message(" HELLO");
+    _timer.append_message(" HELLO");
+    println!("Second {:20}", _timer);
+    _timer.set_message("");
+    println!("Third {:20}", _timer);
+
+    let _x = timer!("VIA MACRO");
+    let _y = bracket_timer!("BRACKET", log::Level::Error);
 }
 
 fn configure_logging(base_dirs: &xdg::BaseDirectories) {
