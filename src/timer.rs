@@ -3,8 +3,9 @@ use std::time;
 use std::fmt;
 use log;
 
-/// This module implements macros which allow blocks of code to be timed.
-/// Macros log the timings.
+/// This module implements a Timer which allow blocks of code to be timed.
+/// A message is logged when the Timer is dropped. The message can be extended
+/// with extra information. Two macros can simplify the creation of timers.
 #[derive(Debug, Clone)]
 pub struct Timer<'a> {
     name: &'a str,
@@ -12,7 +13,6 @@ pub struct Timer<'a> {
     log_level: log::Level,
     log_on_drop: bool,
     message: RefCell<Option<String>>
-    // units: Units // Auto, msec, usec, nsec
 }
 
 impl<'a> Timer<'a> {
@@ -138,10 +138,10 @@ impl<'a> fmt::Display for Timer<'a> {
         let frac_time = d1 as f64 + ((d2 - d1 * 1000) as f64) / 1000.0;
         let msg = self.message.borrow();
         if msg.is_none() {
-            write!(f, "Completed {}, elapsed = {:.2}{}", self.name, frac_time, t)
+            write!(f, "Completed {}, elapsed = {:.2} {}", self.name, frac_time, t)
         } else {
             let msg = msg.as_ref().unwrap();
-            write!(f, "Completed {}, elapsed = {:.2}{} {}", self.name, frac_time, t, msg)
+            write!(f, "Completed {}, elapsed = {:.2} {} {}", self.name, frac_time, t, msg)
         }
     }
 }

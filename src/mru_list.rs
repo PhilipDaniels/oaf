@@ -160,9 +160,9 @@ impl OafMruList {
                 }
             }
             self.mru.clear_is_changed();
-            info!("Read {} MRU entries from {}", self.mru.len(), self.filename.display());
+            info!("Read {} MRU entries from '{}'", self.mru.len(), self.filename.display());
         } else {
-            info!("No MRU list loaded because the expected MRU file {} does not exist.", self.filename.display());
+            info!("No MRU list loaded because the expected MRU file '{}' does not exist.", self.filename.display());
         }
 
         Ok(())

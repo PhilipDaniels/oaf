@@ -9,6 +9,7 @@ extern crate path_encoding;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
+use std::thread;
 
 mod mru_list;
 use mru_list::OafMruList;
@@ -62,6 +63,13 @@ fn main() {
 
     let _x = timer!("VIA MACRO");
     let _y = bracket_timer!("BRACKET", log::Level::Error);
+
+    let thr = thread::Builder::new().name("child1".to_string()).spawn(background_thread).unwrap();
+    thr.join();
+}
+
+fn background_thread() {
+    timer!("BGOUN");
 }
 
 fn configure_logging(base_dirs: &xdg::BaseDirectories) {
