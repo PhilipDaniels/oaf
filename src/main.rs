@@ -4,22 +4,22 @@ extern crate serde;
 extern crate log4rs;
 #[macro_use] extern crate structopt;
 extern crate xdg;
+extern crate git2;
 
 // Crates in my workspace.
 extern crate path_encoding;
 
 use structopt::StructOpt;
+use git2::Repository;
 use std::path::PathBuf;
-use std::thread;
+use std::env;
 
 // If some of my modules export macros, they must be imported before they are used
 // (order matters where macros are concerned).
 #[macro_use] mod timer;
-use timer::Timer;
 
 mod mru_list;
 use mru_list::OafMruList;
-
 
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
@@ -36,6 +36,12 @@ struct Arguments {
     /// Turn off all logging.
     #[structopt(long = "no-logging")]
     no_logging: bool,  
+
+    /// Optional list of directories to open. The directories are expected to be
+    /// git repositories. If no directory is passed, the current directory is
+    /// assumed.
+    #[structopt(parse(from_os_str))]
+    directories: Vec<PathBuf>
 }
 
 
@@ -43,7 +49,7 @@ struct Arguments {
 fn main() {
     std::env::set_var("IN_OAF", "1");
 
-    let args = Arguments::from_args();
+    let mut args = Arguments::from_args();
 
     let base_dirs = xdg::BaseDirectories::with_prefix(built_info::PKG_NAME)
         .expect("Could not locate xdg base directories, cannot initialize.");
@@ -59,12 +65,32 @@ fn main() {
     let mut mru = OafMruList::new(&mru_file);
     mru.read_from_file();
 
-    //let thr = thread::Builder::new().name("child1".to_string()).spawn(background_thread).unwrap();
-    //thr.join();
-}
+    if args.directories.is_empty() {
+        match env::current_dir() {
+            Ok(dir) => args.directories.push(dir),
+            Err(e) => warn!("Error getting current directory: {}", e)
+        }
+    }
 
-fn background_thread() {
-    timer!("BGOUN");
+    // TODO: Canonicalize paths, expand ~ and .
+    // Directory may not exist.
+    // Only save MRU once.
+    // Running twice reverses the direction of the MRU list.
+    let _x: Vec<_> = args.directories.iter()
+        .filter_map(|dir| {
+            info!("Attempting to open Git repository at {}", dir.display());
+            match Repository::open(&dir) {
+                Ok(repo) => {
+                    mru.add_path_and_save(&dir);
+                    Some(repo)
+                },
+                Err(e) => {
+                    warn!("Failed to initialize repository: {}", e);
+                    None
+                }
+            }
+        })
+        .collect();
 }
 
 fn configure_logging(base_dirs: &xdg::BaseDirectories) {
