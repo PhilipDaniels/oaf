@@ -3,6 +3,7 @@ use std::time;
 use std::fmt;
 use log;
 
+
 /// This module implements a Timer which allow blocks of code to be timed.
 /// A message is logged when the Timer is dropped. The message can be extended
 /// with extra information. Two macros can simplify the creation of timers.
@@ -15,6 +16,7 @@ pub struct Timer<'a> {
     message: RefCell<Option<String>>
 }
 
+#[allow(dead_code)]
 impl<'a> Timer<'a> {
     /// Constructs a new timer at Trace log level which logs only when dropped.
     pub fn new(name: &'a str) -> Timer<'a> {

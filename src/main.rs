@@ -72,15 +72,35 @@ fn main() {
         }
     }
 
+    // path_ext::make_[canon]_home_relative(p: &Path) // canonicalize then replace leading /home/phil with ~.
+    //
     // TODO: Canonicalize paths, expand ~ and .
-    // Directory may not exist.
-    // Only save MRU once.
-    // Running twice reverses the direction of the MRU list.
+    // Deal with .git/bare repositories.
+    // IO functions are actually Results.
+    // We really want a Command(OpenRepository(dir)).
     let _x: Vec<_> = args.directories.iter()
         .filter_map(|dir| {
-            info!("Attempting to open Git repository at {}", dir.display());
+            if !dir.exists() {
+                warn!("The directory '{}' does not exist, ignoring.", dir.display());
+                return None;
+            }
+
+            if !dir.is_dir() {
+                warn!("The path '{}' is not a directory.", dir.display());
+                return None;
+            }
+
+            let dir = match dir.canonicalize() {
+                Ok(canon_dir) => canon_dir,
+                Err(_) => {
+                    warn!("The path '{}' cannot be canonicalized, ignoring.", dir.display());
+                    return None;
+                }
+            };
+
             match Repository::open(&dir) {
                 Ok(repo) => {
+                    info!("Successfully opened Git repository at '{}'", dir.display());
                     mru.add_path(&dir);
                     Some(repo)
                 },

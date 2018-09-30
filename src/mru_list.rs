@@ -132,14 +132,6 @@ impl OafMruList {
         self.mru.insert(path);
     }
 
-/*    pub fn add_path_and_save<P>(&mut self, path: P) -> io::Result<()>
-        where P: AsRef<Path>
-    {
-        let path = path.as_ref().to_path_buf();
-        self.mru.insert(path);
-        self.write_to_file()
-    }
-*/
     pub fn write_to_file(&mut self) -> io::Result<()> {
         let _timer = timer!("MRU.write");
 
@@ -152,7 +144,7 @@ impl OafMruList {
         }
 
         self.mru.clear_is_changed();
-        _timer.set_message(format!("Wrote {} entries to the MRU file {}", self.mru.len(), self.filename.display()));
+        _timer.set_message(format!("Wrote {} entries to the MRU file '{}'", self.mru.len(), self.filename.display()));
         Ok(())
     }
 
@@ -167,7 +159,7 @@ impl OafMruList {
                 if line.trim().is_empty() { continue };
                 match path_encoding::decode_path(&line) {
                     Ok(decoded_path) => self.mru.insert(decoded_path),
-                    Err(_) => warn!("Skipping undecodable MRU entry {}", line)
+                    Err(_) => warn!("Skipping undecodable MRU entry '{}'", line)
                 }
             }
             self.mru.data.reverse();
