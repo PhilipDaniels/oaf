@@ -5,16 +5,22 @@ extern crate log4rs;
 #[macro_use] extern crate structopt;
 extern crate xdg;
 
+// Crates in my workspace.
 extern crate path_encoding;
 
 use structopt::StructOpt;
 use std::path::PathBuf;
 use std::thread;
 
-mod mru_list;
-use mru_list::OafMruList;
+// If some of my modules export macros, they must be imported before they are used
+// (order matters where macros are concerned).
 #[macro_use] mod timer;
 use timer::Timer;
+
+mod mru_list;
+use mru_list::OafMruList;
+
+
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
@@ -49,23 +55,12 @@ fn main() {
         log_built_info();
     }
 
-    let _timer = Timer::bracket_timer("MRU", log::Level::Warn).log_on_drop(true).at_level(log::Level::Warn);
     let mru_file = base_dirs.place_config_file("mru.txt").unwrap();
     let mut mru = OafMruList::new(&mru_file);
     mru.read_from_file();
-    println!("First {}", _timer);
-    _timer.set_message("Read 15 things from a file.");
-    _timer.append_message(" HELLO");
-    _timer.append_message(" HELLO");
-    println!("Second {:20}", _timer);
-    _timer.set_message("");
-    println!("Third {:20}", _timer);
 
-    let _x = timer!("VIA MACRO");
-    let _y = bracket_timer!("BRACKET", log::Level::Error);
-
-    let thr = thread::Builder::new().name("child1".to_string()).spawn(background_thread).unwrap();
-    thr.join();
+    //let thr = thread::Builder::new().name("child1".to_string()).spawn(background_thread).unwrap();
+    //thr.join();
 }
 
 fn background_thread() {
@@ -76,7 +71,8 @@ fn configure_logging(base_dirs: &xdg::BaseDirectories) {
     if let Ok(path) = base_dirs.place_config_file("logging.toml") {
         if path.exists() {
             log4rs::init_file(&path, Default::default()).expect("Cannot configure logging.");
-            info!("Logging initialized using file at {:?}", path);
+            // Use a messge that makes it very easy to find the start of one run in a log file.
+            info!("========== Logging initialized using file at {:?} ==========", path);
         }
     }
 }

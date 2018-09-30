@@ -141,7 +141,7 @@ impl<'a> fmt::Display for Timer<'a> {
             write!(f, "Completed {}, elapsed = {:.2} {}", self.name, frac_time, t)
         } else {
             let msg = msg.as_ref().unwrap();
-            write!(f, "Completed {}, elapsed = {:.2} {} {}", self.name, frac_time, t, msg)
+            write!(f, "Completed {}, elapsed = {:.2} {}, {}", self.name, frac_time, t, msg)
         }
     }
 }

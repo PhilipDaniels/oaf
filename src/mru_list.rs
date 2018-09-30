@@ -134,6 +134,8 @@ impl OafMruList {
     }
 
     fn write_to_file(&mut self) -> io::Result<()> {
+        let _timer = timer!("MRU.write");
+
         let file = File::create(&self.filename)?;
         let mut writer = BufWriter::new(file);
 
@@ -143,11 +145,13 @@ impl OafMruList {
         }
 
         self.mru.clear_is_changed();
-        info!("Wrote {} entries to the MRU file {}", self.mru.len(), self.filename.display());
+        _timer.set_message(format!("Wrote {} entries to the MRU file {}", self.mru.len(), self.filename.display()));
         Ok(())
     }
 
     pub fn read_from_file(&mut self) -> io::Result<()> {
+        let _timer = timer!("MRU.read");
+
         if Path::exists(&self.filename) {
             let file = File::open(&self.filename)?;
             let reader = BufReader::new(file);
@@ -160,9 +164,11 @@ impl OafMruList {
                 }
             }
             self.mru.clear_is_changed();
-            info!("Read {} MRU entries from '{}'", self.mru.len(), self.filename.display());
+            _timer.set_message(format!("Read {} MRU entries from '{}'",
+                                       self.mru.len(), self.filename.display()));
         } else {
-            info!("No MRU list loaded because the expected MRU file '{}' does not exist.", self.filename.display());
+            _timer.set_message(format!("No MRU list loaded because the expected MRU file '{}' does not exist.",
+                                      self.filename.display()));
         }
 
         Ok(())
