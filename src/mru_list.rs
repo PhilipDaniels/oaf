@@ -125,15 +125,22 @@ impl OafMruList {
         }
     }
 
-    pub fn add_path_and_save<P>(&mut self, path: P) -> io::Result<()>
+    pub fn add_path<P>(&mut self, path: P)
+        where P: AsRef<Path>
+    {
+        let path = path.as_ref().to_path_buf();
+        self.mru.insert(path);
+    }
+
+/*    pub fn add_path_and_save<P>(&mut self, path: P) -> io::Result<()>
         where P: AsRef<Path>
     {
         let path = path.as_ref().to_path_buf();
         self.mru.insert(path);
         self.write_to_file()
     }
-
-    fn write_to_file(&mut self) -> io::Result<()> {
+*/
+    pub fn write_to_file(&mut self) -> io::Result<()> {
         let _timer = timer!("MRU.write");
 
         let file = File::create(&self.filename)?;
@@ -163,6 +170,7 @@ impl OafMruList {
                     Err(_) => warn!("Skipping undecodable MRU entry {}", line)
                 }
             }
+            self.mru.data.reverse();
             self.mru.clear_is_changed();
             _timer.set_message(format!("Read {} MRU entries from '{}'",
                                        self.mru.len(), self.filename.display()));

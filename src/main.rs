@@ -81,7 +81,7 @@ fn main() {
             info!("Attempting to open Git repository at {}", dir.display());
             match Repository::open(&dir) {
                 Ok(repo) => {
-                    mru.add_path_and_save(&dir);
+                    mru.add_path(&dir);
                     Some(repo)
                 },
                 Err(e) => {
@@ -91,6 +91,8 @@ fn main() {
             }
         })
         .collect();
+
+    mru.write_to_file();
 }
 
 fn configure_logging(base_dirs: &xdg::BaseDirectories) {
