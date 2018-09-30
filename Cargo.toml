@@ -13,6 +13,7 @@ serde_derive = "1.0"
 toml = "0.4"
 xdg = "2.1.0"
 path-encoding = { path = "path-encoding" }
+git2 = "0.7.5"
 
 [build-dependencies]
 built = "0.3.0"
