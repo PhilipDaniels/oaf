@@ -20,7 +20,7 @@ use std::env;
 
 mod mru_list;
 use mru_list::OafMruList;
-
+mod utils;
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
@@ -72,9 +72,7 @@ fn main() {
         }
     }
 
-    // path_ext::make_[canon]_home_relative(p: &Path) // canonicalize then replace leading /home/phil with ~.
-    //
-    // TODO: Canonicalize paths, expand ~ and .
+    // TODO:
     // Deal with .git/bare repositories.
     // IO functions are actually Results.
     // We really want a Command(OpenRepository(dir)).
