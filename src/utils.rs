@@ -1,5 +1,6 @@
 
 /// TODO: Can we use Cow here?
+/// Tried to do it, but run into lifetime issues with the AsRef...Cow in expand_tilde_impl etc.
 
 mod path {
     use std::path::{Path, PathBuf};
@@ -77,6 +78,35 @@ mod path {
 
         path
     }
+
+    /*
+    // This almost works, but expand_tilde_impl2 can't be called from a test ,easily.
+    use std::borrow::Cow;
+
+    fn expand_tilde_impl2<'a, P, Q>(path: &'a P, home: Q) -> Cow<'a, Path>
+        where P: AsRef<Path>,
+              Q: AsRef<Path>
+    {
+        let path = path.as_ref();
+
+        if path.starts_with("~") {
+            let mut result = home.as_ref().to_path_buf();
+            for comp in path.components().skip(1) {
+                result.push(comp);
+            }
+            return Cow::Owned(result);
+        }
+
+        Cow::Borrowed(path)
+    }
+
+    fn exp2<'a, P, Q>(path: &'a P, home: Q) -> Cow<'a, Path>
+        where P: AsRef<Path>,
+              Q: AsRef<Path>
+    {
+        Cow::Borrowed(path.as_ref())
+    }
+    */
 
     #[cfg(test)]
     mod tests {
