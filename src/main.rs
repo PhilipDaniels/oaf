@@ -10,6 +10,7 @@ extern crate git2;
 extern crate directories;
 #[macro_use]
 extern crate lazy_static;
+extern crate itertools;
 
 // Crates in my workspace.
 extern crate path_encoding;
@@ -18,6 +19,7 @@ use structopt::StructOpt;
 use git2::Repository;
 use std::path::{Path, PathBuf};
 use std::env;
+use itertools::Itertools;
 
 // If some of my modules export macros, they must be imported before they are used
 // (order matters where macros are concerned).
@@ -67,50 +69,23 @@ fn main() {
     let mut mru = OafMruList::new(PATHS.mru_file());
     mru.read_from_file();
 
-    if args.directories.is_empty() {
-        match env::current_dir() {
-            Ok(dir) => args.directories.push(dir),
-            Err(e) => warn!("Error getting current directory: {}", e)
-        }
-    }
+    verify_directories(&mut args.directories);
 
     // TODO:
     // Deal with .git/bare repositories.
     // IO functions are actually Results.
     // We really want a Command(OpenRepository(dir)).
-    let _x: Vec<_> = args.directories.iter()
-        .filter_map(|dir| {
-            if !dir.exists() {
-                warn!("The directory '{}' does not exist, ignoring.", dir.display());
-                return None;
+    for dir in &args.directories {
+        match Repository::open(&dir) {
+            Ok(repo) => {
+                info!("Successfully opened Git repository at '{}'", dir.display());
+                mru.add_path(&dir);
+            },
+            Err(e) => {
+                warn!("Failed to initialize repository, ignoring: {}", e);
             }
-
-            if !dir.is_dir() {
-                warn!("The path '{}' is not a directory.", dir.display());
-                return None;
-            }
-
-            let dir = match dir.canonicalize() {
-                Ok(canon_dir) => canon_dir,
-                Err(_) => {
-                    warn!("The path '{}' cannot be canonicalized, ignoring.", dir.display());
-                    return None;
-                }
-            };
-
-            match Repository::open(&dir) {
-                Ok(repo) => {
-                    info!("Successfully opened Git repository at '{}'", dir.display());
-                    mru.add_path(&dir);
-                    Some(repo)
-                },
-                Err(e) => {
-                    warn!("Failed to initialize repository: {}", e);
-                    None
-                }
-            }
-        })
-        .collect();
+        }
+    }
 
     mru.write_to_file();
 }
@@ -136,3 +111,38 @@ fn log_built_info() {
 //        built_info::BUILT_TIME_UTC,
 //        built_info::DEPENDENCIES_STR);
 }
+
+/// Verify the directories specified on the command line are valid, existing, non-duplicate etc.
+fn verify_directories(directories: &mut Vec<PathBuf>) {
+    if directories.is_empty() {
+        match env::current_dir() {
+            Ok(dir) => directories.push(dir),
+            Err(e) => warn!("Error getting current directory, no attempt will be made to open it: {}", e)
+        }
+    }
+
+    // Use a vec to hold intermediary result rather than a HashSet in order
+    // to preserve the order the user specified on the command line.
+    let mut result = Vec::new();
+
+    for dir in directories.iter() {
+        if !dir.exists() {
+            warn!("The directory '{}' does not exist, ignoring.", dir.display());
+            continue;
+        }
+
+        if !dir.is_dir() {
+            warn!("The path '{}' is not a directory, ignoring.", dir.display());
+            continue;
+        }
+
+        let dir = dir.canonicalize().unwrap_or(dir.to_path_buf());
+        if !result.contains(&dir) {
+            result.push(dir);
+        }
+    }
+
+    directories.clear();
+    directories.extend(result);
+}
+

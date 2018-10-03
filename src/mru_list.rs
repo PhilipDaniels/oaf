@@ -4,6 +4,7 @@ use std::io::{self, Write, BufRead, BufWriter, BufReader};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use path_encoding;
+use paths;
 
 /// A simple MRU-list data structure. Create a list of the appropriate
 /// maximum size (which can be changed later) then use `insert` to add new
@@ -128,7 +129,7 @@ impl OafMruList {
     pub fn add_path<P>(&mut self, path: P)
         where P: AsRef<Path>
     {
-        let path = path.as_ref().to_path_buf();
+        let path = paths::to_canon(path);
         self.mru.insert(path);
     }
 
@@ -158,7 +159,7 @@ impl OafMruList {
                 let line = line_result?;
                 if line.trim().is_empty() { continue };
                 match path_encoding::decode_path(&line) {
-                    Ok(decoded_path) => self.mru.insert(decoded_path),
+                    Ok(decoded_path) => self.mru.insert(paths::from_canon(decoded_path)),
                     Err(_) => warn!("Skipping undecodable MRU entry '{}'", line)
                 }
             }

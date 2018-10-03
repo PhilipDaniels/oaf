@@ -38,9 +38,9 @@ impl WellKnownPaths {
         &self.home_dir
     }
 
-    pub fn config_dir(&self) -> &Path {
-        &self.config_dir
-    }
+//    pub fn config_dir(&self) -> &Path {
+//        &self.config_dir
+//    }
 
     pub fn logging_config_file(&self) -> &Path {
         &self.logging_config_file
