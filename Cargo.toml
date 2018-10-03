@@ -11,10 +11,10 @@ log4rs = { version = "0.8.0", features = [ "toml_format" ] }
 serde = "1.0" 
 serde_derive = "1.0"
 toml = "0.4"
-xdg = "2.1.0"
 path-encoding = { path = "path-encoding" }
 git2 = "0.7.5"
 directories = "1.0.2"
+lazy_static = "1.1.0"
 
 [build-dependencies]
 built = "0.3.0"

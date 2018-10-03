@@ -1,26 +1,31 @@
-#[macro_use] extern crate serde_derive;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde;
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 extern crate log4rs;
-#[macro_use] extern crate structopt;
-extern crate xdg;
+#[macro_use]
+extern crate structopt;
 extern crate git2;
+extern crate directories;
+#[macro_use]
+extern crate lazy_static;
 
 // Crates in my workspace.
 extern crate path_encoding;
 
 use structopt::StructOpt;
 use git2::Repository;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::env;
 
 // If some of my modules export macros, they must be imported before they are used
 // (order matters where macros are concerned).
 #[macro_use] mod timer;
-
 mod mru_list;
 use mru_list::OafMruList;
 mod utils;
+mod paths;
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
@@ -44,25 +49,22 @@ struct Arguments {
     directories: Vec<PathBuf>
 }
 
-
+lazy_static! {
+    static ref PATHS: paths::WellKnownPaths = { paths::WellKnownPaths::new() };
+}
 
 fn main() {
     std::env::set_var("IN_OAF", "1");
-
     let mut args = Arguments::from_args();
-
-    let base_dirs = xdg::BaseDirectories::with_prefix(built_info::PKG_NAME)
-        .expect("Could not locate xdg base directories, cannot initialize.");
 
     // Configure logging as early as possible (because, obviously, we want to log
     // in the rest of the initialization phase).
     if !args.no_logging {
-        configure_logging(&base_dirs);
+        configure_logging(PATHS.logging_config_file());
         log_built_info();
     }
 
-    let mru_file = base_dirs.place_config_file("mru.txt").unwrap();
-    let mut mru = OafMruList::new(&mru_file);
+    let mut mru = OafMruList::new(PATHS.mru_file());
     mru.read_from_file();
 
     if args.directories.is_empty() {
@@ -113,13 +115,11 @@ fn main() {
     mru.write_to_file();
 }
 
-fn configure_logging(base_dirs: &xdg::BaseDirectories) {
-    if let Ok(path) = base_dirs.place_config_file("logging.toml") {
-        if path.exists() {
-            log4rs::init_file(&path, Default::default()).expect("Cannot configure logging.");
-            // Use a messge that makes it very easy to find the start of one run in a log file.
-            info!("========== Logging initialized using file at {:?} ==========", path);
-        }
+fn configure_logging(logging_config_file: &Path) {
+    if logging_config_file.exists() {
+        log4rs::init_file(&logging_config_file, Default::default()).expect("Cannot configure logging.");
+        // Use a messge that makes it very easy to find the start of one run in a log file.
+        info!("========== Logging initialized using file at {:?} ==========", logging_config_file);
     }
 }
 
