@@ -11,6 +11,7 @@ extern crate directories;
 #[macro_use]
 extern crate lazy_static;
 //extern crate itertools;
+extern crate cursive;
 
 // Crates in my workspace.
 extern crate path_encoding;
@@ -20,6 +21,8 @@ use git2::{Repository, RepositoryOpenFlags};
 use std::path::{Path, PathBuf};
 use std::env;
 //use itertools::Itertools;
+use cursive::Cursive;
+use cursive::views::{Dialog, TextView};
 
 // If some of my modules export macros, they must be imported before they are used
 // (order matters where macros are concerned).
@@ -130,14 +133,20 @@ fn main() {
     }
 
     verify_directories(&mut args.directories);
-    let mut repos = Repositories::new(mru);
+
+    let mut siv = Cursive::default();
+    siv.add_layer(Dialog::around(TextView::new("Hello Oaf!"))
+                  .title("Cursive")
+                  .button("Quit", |s| s.quit()));
+    siv.run();
+//    let mut repos = Repositories::new(mru);
 
     // We really want a Command(OpenRepository(dir)).
-    for dir in &args.directories {
-        if let Some(repo) = repos.open(dir) {
+//    for dir in &args.directories {
+//        if let Some(repo) = repos.open(dir) {
 //            info!("workdir = {:?}, path = {:?}, Namespace = {:?}", repo.workdir(), repo.path(), repo.namespace());
-        }
-    }
+//        }
+//    }
 }
 
 fn configure_logging(logging_config_file: &Path) {
