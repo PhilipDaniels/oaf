@@ -81,10 +81,14 @@ fn main() {
 
     // If we managed to open at least 1, display it, else show the
     // opening view.
-
+    let mut repolist = String::new();
+    for r in &repos {
+        repolist.push_str(&r.path().display().to_string());
+        repolist.push('\n');
+    }
 
     let mut siv = Cursive::default();
-    siv.add_layer(Dialog::around(TextView::new("Hello Oaf!"))
+    siv.add_layer(Dialog::around(TextView::new(repolist))
                   .title("Cursive")
                   .button("Quit", |s| s.quit()));
     siv.run();

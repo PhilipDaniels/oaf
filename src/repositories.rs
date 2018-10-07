@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::ops::Index;
 use git2::{Repository, RepositoryOpenFlags};
 use mru_list::OafMruList;
 
@@ -13,6 +14,10 @@ impl Repositories {
             mru: mru,
             repos: Vec::new()
         }
+    }
+
+    pub fn iter(&self) -> RepositoriesIterator {
+        RepositoriesIterator { repos: &self.repos, next: 0 }
     }
 
     fn repo_is_open<P>(&self, path: P) -> bool
@@ -59,3 +64,37 @@ impl Repositories {
     }
 }
 
+impl Index<usize> for Repositories {
+    type Output = Repository;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.repos[index]
+    }
+}
+
+pub struct RepositoriesIterator<'a> {
+    repos: &'a Vec<Repository>,
+    next: usize,
+}
+
+impl<'a> Iterator for RepositoriesIterator<'a> {
+    type Item = &'a Repository;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next == self.repos.len() {
+            None
+        } else {
+            self.next += 1;
+            Some(&self.repos[self.next - 1])
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a Repositories {
+    type Item = &'a Repository;
+    type IntoIter = RepositoriesIterator<'a>;
+    
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
