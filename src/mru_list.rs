@@ -128,8 +128,8 @@ impl OafMruList {
         }
     }
 
-    pub fn nth(&self, n: usize) -> &PathBuf {
-        &self.mru[n]
+    pub fn filename(&self) -> &Path {
+        &self.filename
     }
 
     pub fn add_path<P>(&mut self, path: P)

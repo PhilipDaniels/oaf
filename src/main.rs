@@ -1,7 +1,4 @@
 #[macro_use]
-//extern crate serde_derive;
-//extern crate serde;
-#[macro_use]
 extern crate log;
 extern crate log4rs;
 #[macro_use]
@@ -10,17 +7,14 @@ extern crate git2;
 extern crate directories;
 #[macro_use]
 extern crate lazy_static;
-//extern crate itertools;
 extern crate cursive;
 
 // Crates in my workspace.
 extern crate path_encoding;
 
 use structopt::StructOpt;
-use git2::{Repository, RepositoryOpenFlags};
 use std::path::{Path, PathBuf};
 use std::env;
-//use itertools::Itertools;
 use cursive::Cursive;
 use cursive::views::{Dialog, TextView};
 
@@ -31,6 +25,8 @@ mod mru_list;
 use mru_list::OafMruList;
 mod utils;
 mod paths;
+mod repositories;
+use repositories::Repositories;
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
@@ -57,63 +53,6 @@ lazy_static! {
     static ref PATHS: paths::WellKnownPaths = { paths::WellKnownPaths::new() };
 }
 
-struct Repositories {
-    mru: OafMruList,
-    repos: Vec<Repository>
-}
-
-impl Repositories {
-    fn new(mru: OafMruList) -> Self {
-        Repositories {
-            mru: mru,
-            repos: Vec::new()
-        }
-    }
-
-    fn repo_is_open<P>(&self, path: P) -> bool
-        where P: AsRef<Path>
-    {
-        let path = path.as_ref();
-        self.repos.iter().any(|repo| repo.path() == path || repo.workdir() == Some(path))
-    }
-
-    fn open<P>(&mut self, path: P) -> Option<&Repository>
-        where P: AsRef<Path>
-    {
-        // Do not allow a repository to be opened more than once. This is not
-        // actually sufficient, because we may search up for the actual path
-        // (i.e. we may start oaf in a subdirectory of the repository).
-        let path = path.as_ref();
-        if self.repo_is_open(path) {
-            warn!("The repository at path '{}' is already open, ignoring.", path.display());
-            return None;
-        }
-
-        match Repository::open_ext(path, RepositoryOpenFlags::empty(), vec![PATHS.home_dir()]) {
-            Ok(repo) => {
-                if self.repo_is_open(repo.path()) {
-                    warn!("The repository at path '{}' is already open, ignoring.", path.display());
-                    return None;
-                }
-
-                info!("Successfully opened Git repository at '{}'", repo.path().display());
-                self.repos.push(repo);
-                self.mru.add_path(path);
-                if let Err(e) = self.mru.write_to_file() {
-                    warn!("Error writing to MRU file '{}', ignoring. Error = {}", PATHS.mru_file().display(), e);
-                }
-
-                return Some(&self.repos[self.repos.len() - 1]);
-            },
-            Err(e) => {
-                warn!("Failed to initialize repository, ignoring: {}", e);
-            }
-        }
-
-        None
-    }
-}
-
 fn main() {
     std::env::set_var("IN_OAF", "1");
     let mut args = Arguments::from_args();
@@ -130,16 +69,19 @@ fn main() {
         warn!("Error reading from MRU file '{}', ignoring. Error = {}", PATHS.mru_file().display(), e);
     }
 
+    // Get all the directories specified (including the current directory if none
+    // were specified) and try and open them all. This also validates paths
+    // and ascends the directory to tree to try and find a valid repo.
     verify_directories(&mut args.directories);
-
     let mut repos = Repositories::new(mru);
 
-    // We really want a Command(OpenRepository(dir)).
     for dir in &args.directories {
-        if let Some(repo) = repos.open(dir) {
-//            info!("workdir = {:?}, path = {:?}, Namespace = {:?}", repo.workdir(), repo.path(), repo.namespace());
-        }
+        let _ = repos.open(dir);
     }
+
+    // If we managed to open at least 1, display it, else show the
+    // opening view.
+
 
     let mut siv = Cursive::default();
     siv.add_layer(Dialog::around(TextView::new("Hello Oaf!"))
