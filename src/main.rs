@@ -89,8 +89,6 @@ impl Repositories {
             return None;
         }
 
-        // TODO: Write wrapped MRU read/write methods.
-        // Find out why we write 11 but only read 9 entries.
         match Repository::open_ext(path, RepositoryOpenFlags::empty(), vec![PATHS.home_dir()]) {
             Ok(repo) => {
                 if self.repo_is_open(repo.path()) {
@@ -134,19 +132,20 @@ fn main() {
 
     verify_directories(&mut args.directories);
 
+    let mut repos = Repositories::new(mru);
+
+    // We really want a Command(OpenRepository(dir)).
+    for dir in &args.directories {
+        if let Some(repo) = repos.open(dir) {
+//            info!("workdir = {:?}, path = {:?}, Namespace = {:?}", repo.workdir(), repo.path(), repo.namespace());
+        }
+    }
+
     let mut siv = Cursive::default();
     siv.add_layer(Dialog::around(TextView::new("Hello Oaf!"))
                   .title("Cursive")
                   .button("Quit", |s| s.quit()));
     siv.run();
-//    let mut repos = Repositories::new(mru);
-
-    // We really want a Command(OpenRepository(dir)).
-//    for dir in &args.directories {
-//        if let Some(repo) = repos.open(dir) {
-//            info!("workdir = {:?}, path = {:?}, Namespace = {:?}", repo.workdir(), repo.path(), repo.namespace());
-//        }
-//    }
 }
 
 fn configure_logging(logging_config_file: &Path) {
@@ -204,4 +203,3 @@ fn verify_directories(directories: &mut Vec<PathBuf>) {
     directories.clear();
     directories.extend(result);
 }
-

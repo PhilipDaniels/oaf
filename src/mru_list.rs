@@ -111,6 +111,8 @@ impl<'mru, T> IntoIterator for &'mru MRUList<T>
     }
 }
 
+/// An OafMruList always holds paths in RAM in their expanded '/home/xyz' form,
+/// but writes them out to disk in their friendlier '~' form.
 pub struct OafMruList {
     filename: PathBuf,
     mru: MRUList<PathBuf>
@@ -126,10 +128,14 @@ impl OafMruList {
         }
     }
 
+    pub fn nth(&self, n: usize) -> &PathBuf {
+        &self.mru[n]
+    }
+
     pub fn add_path<P>(&mut self, path: P)
         where P: AsRef<Path>
     {
-        let path = paths::to_canon(path);
+        let path = paths::from_canon(path);
         self.mru.insert(path);
     }
 
@@ -140,7 +146,8 @@ impl OafMruList {
         let mut writer = BufWriter::new(file);
 
         for pbuf in self.mru.iter() {
-            let encoded_path = path_encoding::encode_path(&pbuf);
+            let p = paths::to_canon(&pbuf);
+            let encoded_path = path_encoding::encode_path(&p);
             writeln!(writer, "{}", encoded_path);
         }
 
