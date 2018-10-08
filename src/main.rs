@@ -16,7 +16,15 @@ use structopt::StructOpt;
 use std::path::{Path, PathBuf};
 use std::env;
 use cursive::Cursive;
-use cursive::views::{Dialog, TextView};
+use cursive::align::HAlign;
+use cursive::traits::*;
+use cursive::views::{Dialog, DummyView, LinearLayout, TextView, SelectView};
+use cursive::theme::BaseColor;
+use cursive::theme::Color;
+use cursive::theme::Effect;
+use cursive::theme::Style;
+use cursive::utils::markup::StyledString;
+use cursive::utils::span::SpannedString;
 
 // If some of my modules export macros, they must be imported before they are used
 // (order matters where macros are concerned).
@@ -79,19 +87,43 @@ fn main() {
         let _ = repos.open(dir);
     }
 
+    run_cursive(repos);
+}
+
+fn run_cursive(repos: Repositories) {
     // If we managed to open at least 1, display it, else show the
     // opening view.
     let mut repolist = String::new();
     for r in &repos {
+        for i in 0..10 {
         repolist.push_str(&r.path().display().to_string());
         repolist.push('\n');
+        }
     }
 
     let mut siv = Cursive::default();
-    siv.add_layer(Dialog::around(TextView::new(repolist))
-                  .title("Cursive")
-                  .button("Quit", |s| s.quit()));
+    siv.add_global_callback('q', |s| s.quit());
+
+    let mut select = SelectView::new()
+        .h_align(HAlign::Left);
+    select.add_all_str(repolist.lines());
+
+    siv.add_layer(Dialog::around(
+        LinearLayout::vertical()
+            .child(TextView::new(format!("{} {}", built_info::PKG_NAME, built_info::PKG_VERSION)).h_align(HAlign::Center))
+            .child(DummyView.fixed_height(2))
+            .child(TextView::new(in_bold("Choose a repository")))
+            .child(DummyView.fixed_height(1))
+            .child(select.scrollable().scroll_x(true).fixed_width(50)))
+    );
+
     siv.run();
+}
+
+fn in_bold(s: &str) -> SpannedString<Style> {
+    let mut ss = StyledString::styled(s, Effect::Bold);
+    ss.append(StyledString::styled(" please", Style::from(Color::Light(BaseColor::Red))));
+    ss
 }
 
 fn configure_logging(logging_config_file: &Path) {
