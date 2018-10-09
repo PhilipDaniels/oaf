@@ -95,10 +95,8 @@ fn run_cursive(repos: Repositories) {
     // opening view.
     let mut repolist = String::new();
     for r in &repos {
-        for i in 0..10 {
         repolist.push_str(&r.path().display().to_string());
         repolist.push('\n');
-        }
     }
 
     let mut siv = Cursive::default();
