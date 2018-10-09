@@ -93,7 +93,7 @@ fn main() {
 fn run_cursive(repos: Repositories) {
     // If we managed to open at least 1, display it, else show the opening view.
     let mut repolist = String::new();
-    for r in repos.iter() {
+    for r in &repos {
         repolist.push_str(&r.path().display().to_string());
         repolist.push('\n');
     }

@@ -72,3 +72,12 @@ impl Index<usize> for Repositories {
         &self.repos[index]
     }
 }
+
+impl<'a> IntoIterator for &'a Repositories {
+    type Item = &'a Repository;
+    type IntoIter = slice::Iter<'a, Repository>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+
+}
