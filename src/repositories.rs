@@ -3,6 +3,19 @@ use std::ops::Index;
 use std::slice;
 use git2::{Repository, RepositoryOpenFlags};
 use mru_list::OafMruList;
+use paths;
+
+pub trait RepositoryExtensions {
+    fn display_name(&self) -> String;
+}
+
+impl RepositoryExtensions for Repository {
+    fn display_name(&self) -> String {
+        let path = self.workdir().unwrap_or(self.path());
+        let compressed_path = paths::compress_tilde(path);
+        compressed_path.display().to_string()
+    }
+}
 
 pub struct Repositories {
     mru: OafMruList,
