@@ -34,7 +34,7 @@ use mru_list::OafMruList;
 mod utils;
 mod paths;
 mod repositories;
-use repositories::Repositories;
+use repositories::{Repositories, RepositoryExtensions};
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
@@ -92,18 +92,14 @@ fn main() {
 
 fn run_cursive(repos: Repositories) {
     // If we managed to open at least 1, display it, else show the opening view.
-    let mut repolist = String::new();
-    for r in &repos {
-        repolist.push_str(&r.path().display().to_string());
-        repolist.push('\n');
-    }
-
     let mut siv = Cursive::default();
     siv.add_global_callback('q', |s| s.quit());
 
-    let mut select = SelectView::new()
-        .h_align(HAlign::Left);
-    select.add_all_str(repolist.lines());
+    let mut select = SelectView::new().h_align(HAlign::Left);
+    for (i, repo) in repos.iter().enumerate() {
+        select.add_item(repo.display_name(), i);
+    }
+    select.set_on_submit(on_mru_select);
 
     siv.add_layer(Dialog::around(
         LinearLayout::vertical()
@@ -111,10 +107,18 @@ fn run_cursive(repos: Repositories) {
             .child(DummyView.fixed_height(2))
             .child(TextView::new(in_bold("Choose a repository")))
             .child(DummyView.fixed_height(1))
-            .child(select.scrollable().scroll_x(true).fixed_width(50)))
+            .child(select.scrollable().scroll_x(true).scroll_y(true).fixed_width(12)))
     );
 
     siv.run();
+}
+
+fn on_mru_select(siv: &mut Cursive, idx: &usize) {
+    siv.pop_layer();
+    let text = format!("{} is a great city!", idx);
+    siv.add_layer(
+        Dialog::around(TextView::new(text)).button("Quit", |s| s.quit()),
+);
 }
 
 fn in_bold(s: &str) -> SpannedString<Style> {
