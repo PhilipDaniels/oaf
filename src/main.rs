@@ -15,17 +15,6 @@ extern crate path_encoding;
 use structopt::StructOpt;
 use std::path::{Path, PathBuf};
 use std::env;
-use cursive::Cursive;
-use cursive::align::HAlign;
-use cursive::traits::*;
-use cursive::views::{Dialog, DummyView, LinearLayout, TextView, SelectView};
-use cursive::theme::BaseColor;
-use cursive::theme::Color;
-use cursive::theme::Effect;
-use cursive::theme::Style;
-use cursive::utils::markup::StyledString;
-use cursive::utils::span::SpannedString;
-use cursive::menu::MenuTree;
 
 // If some of my modules export macros, they must be imported before they are used
 // (order matters where macros are concerned).
@@ -36,7 +25,7 @@ mod utils;
 mod paths;
 mod repositories;
 use repositories::{Repositories, RepositoryExtensions};
-use cursive::event::Key;
+mod tui;//::default;
 
 // This produces various constants about the build environment which can be referred to using ::PKG_... syntax.
 pub mod built_info {
@@ -89,72 +78,10 @@ fn main() {
         let _ = repos.open(dir);
     }
 
-    run_cursive(repos);
+    tui::run_cursive(repos);
 }
 
-fn run_cursive(repos: Repositories) {
-    // If we managed to open at least 1, display it, else show the opening view.
-    let mut siv = Cursive::default();
-    siv.add_global_callback('q', |s| s.quit());
 
-    // let mut select = SelectView::new().h_align(HAlign::Left);
-    // for (i, repo) in repos.iter().enumerate() {
-    //     select.add_item(repo.display_name(), i);
-    // }
-    // select.set_on_submit(on_mru_select);
-
-    // siv.add_layer(Dialog::around(
-    //     LinearLayout::vertical()
-    //         .child(TextView::new(format!("{} {}", built_info::PKG_NAME, built_info::PKG_VERSION)).h_align(HAlign::Center))
-    //         .child(DummyView.fixed_height(2))
-    //         .child(TextView::new(in_bold("Choose a repository")))
-    //         .child(DummyView.fixed_height(1))
-    //         .child(select.scrollable().scroll_x(true).scroll_y(true).fixed_width(12)))
-    // );
-
-    // Create the menu bar.
-    create_menu_bar(&mut siv);
-
-    siv.run();
-}
-
-fn create_menu_bar(siv: &mut Cursive) {
-    siv.menubar()
-    .add_subtree("File",
-        MenuTree::new()
-            .leaf("New...      C-n",
-                |s| cb_repo_new(s))
-            .subtree("Recent      C-r",
-                MenuTree::new().with(|tree| {
-                    for i in 1..10 {
-                        tree.add_leaf(format!("Item {}", i), |_| ())
-                    }
-                }))
-            .delimiter()
-            .leaf("Exit", |s| s.quit())    
-            //.add_delimiter()
-            //.add_leaf("Quit", |s| s.quit())
-    );
-
-    //siv.set_autohide_menu(false);
-    siv.add_global_callback(Key::Esc, |s| s.select_menubar());
-}
-
-fn cb_repo_new(siv: &mut Cursive) {}
-
-fn on_mru_select(siv: &mut Cursive, idx: &usize) {
-    siv.pop_layer();
-    let text = format!("{} is a great city!", idx);
-    siv.add_layer(
-        Dialog::around(TextView::new(text)).button("Quit", |s| s.quit()),
-);
-}
-
-fn in_bold(s: &str) -> SpannedString<Style> {
-    let mut ss = StyledString::styled(s, Effect::Bold);
-    ss.append(StyledString::styled(" please", Style::from(Color::Light(BaseColor::Red))));
-    ss
-}
 
 fn configure_logging(logging_config_file: &Path) {
     if logging_config_file.exists() {

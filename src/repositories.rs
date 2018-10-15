@@ -18,8 +18,8 @@ impl RepositoryExtensions for Repository {
 }
 
 pub struct Repositories {
-    mru: OafMruList,
-    repos: Vec<Repository>
+    pub mru: OafMruList,
+    pub repos: Vec<Repository>
 }
 
 impl Repositories {
@@ -92,5 +92,4 @@ impl<'a> IntoIterator for &'a Repositories {
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
-
 }

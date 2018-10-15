@@ -128,6 +128,10 @@ impl OafMruList {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.mru.len()
+    }
+
     pub fn filename(&self) -> &Path {
         &self.filename
     }
