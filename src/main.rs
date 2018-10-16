@@ -20,7 +20,7 @@ use std::env;
 // (order matters where macros are concerned).
 #[macro_use] mod timer;
 mod mru_list;
-use mru_list::OafMruList;
+use mru_list::MruList;
 mod utils;
 mod paths;
 mod repositories;
@@ -63,7 +63,7 @@ fn main() {
         log_built_info();
     }
 
-    let mut mru = OafMruList::new(PATHS.mru_file());
+    let mut mru = MruList::new(PATHS.mru_file(), 20);
     if let Err(e) = mru.read_from_file() {
         warn!("Error reading from MRU file '{}', ignoring. Error = {}", PATHS.mru_file().display(), e);
     }

@@ -8,7 +8,7 @@ use cursive::Cursive;
 use cursive::menu::{MenuItem, MenuTree};
 use cursive::event::{Event, Key};
 use repositories::Repositories;
-use mru_list::OafMruList;
+use mru_list::MruList;
 
 pub fn run_cursive(repos: Repositories) {
     // If we managed to open at least 1, display it, else show the opening view.
@@ -34,7 +34,7 @@ pub fn run_cursive(repos: Repositories) {
     // );
 }
 
-fn create_menu_bar(siv: &mut Cursive, mru: &OafMruList) {
+fn create_menu_bar(siv: &mut Cursive, mru: &MruList) {
     let file_menu = create_file_menu(siv, mru);
     siv.menubar().add_subtree("File", file_menu);
 
@@ -42,7 +42,7 @@ fn create_menu_bar(siv: &mut Cursive, mru: &OafMruList) {
     siv.add_global_callback(Key::F10, |s| s.select_menubar());
 }
 
-fn create_file_menu(siv: &mut Cursive, mru: &OafMruList) -> MenuTree {
+fn create_file_menu(siv: &mut Cursive, mru: &MruList) -> MenuTree {
     let mut menu = MenuTree::new();
 
     menu.add_leaf("New...      C-n", cb_file_new);
@@ -52,10 +52,10 @@ fn create_file_menu(siv: &mut Cursive, mru: &OafMruList) -> MenuTree {
     menu.add_leaf("Clone...", cb_file_clone);
 
     if mru.len() > 0 {
-        let recent_submenu = MenuTree::new();
+        let mut recent_submenu = MenuTree::new();
 
-        for mru_repp in mru.iter() {
-
+        for (i, mru_item) in mru.iter().enumerate() {
+            recent_submenu.add_leaf(format!("{} {}", i, mru_item.display()), |_| {});
         }
 
         menu.add_subtree("Recent", recent_submenu);

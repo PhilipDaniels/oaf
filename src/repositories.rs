@@ -2,7 +2,7 @@ use std::path::Path;
 use std::ops::Index;
 use std::slice;
 use git2::{Repository, RepositoryOpenFlags};
-use mru_list::OafMruList;
+use mru_list::MruList;
 use paths;
 
 pub trait RepositoryExtensions {
@@ -18,12 +18,12 @@ impl RepositoryExtensions for Repository {
 }
 
 pub struct Repositories {
-    pub mru: OafMruList,
+    pub mru: MruList,
     pub repos: Vec<Repository>
 }
 
 impl Repositories {
-    pub fn new(mru: OafMruList) -> Self {
+    pub fn new(mru: MruList) -> Self {
         Repositories {
             mru: mru,
             repos: Vec::new()
@@ -62,7 +62,7 @@ impl Repositories {
 
                 info!("Successfully opened Git repository at '{}'", repo.path().display());
                 self.repos.push(repo);
-                self.mru.add_path(path);
+                self.mru.insert(path);
                 if let Err(e) = self.mru.write_to_file() {
                     warn!("Error writing to MRU file '{}', ignoring. Error = {}", self.mru.filename().display(), e);
                 }
