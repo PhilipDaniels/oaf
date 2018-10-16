@@ -23,7 +23,6 @@ pub struct MruList {
     filename: PathBuf,
     items: Vec<PathBuf>,
     max_items: usize,
-    is_changed: bool,
 }
 
 impl MruList {
@@ -34,16 +33,7 @@ impl MruList {
             filename: filename.as_ref().to_path_buf(),
             items: Vec::with_capacity(max_items),
             max_items: max_items,
-            is_changed: false,
         }
-    }
-
-    pub fn is_changed(&self) -> bool {
-        self.is_changed
-    }
-
-    pub fn clear_is_changed(&mut self) {
-        self.is_changed = false;
     }
 
     pub fn len(&self) -> usize {
@@ -71,7 +61,6 @@ impl MruList {
         self.remove(&path);
         self.items.insert(0, path);
         self.items.truncate(self.max_items);
-        self.is_changed = true;
     }
 
     /// Removes a path from the MRUList if it exists. A no-op if it doesn't.
@@ -86,7 +75,6 @@ impl MruList {
     {
         if let Some(pos) = self.items.iter().position(|x| *x == *path) {
             self.items.remove(pos);
-            self.is_changed = true;
         }
     }
 
@@ -102,7 +90,6 @@ impl MruList {
             writeln!(writer, "{}", encoded_path);
         }
 
-        self.clear_is_changed();
         _timer.set_message(format!("Wrote {} entries to the MRU file '{}'", self.len(), self.filename.display()));
         Ok(())
     }
@@ -122,7 +109,6 @@ impl MruList {
                 }
             }
             self.items.reverse();
-            self.clear_is_changed();
             _timer.set_message(format!("Read {} MRU entries from '{}'",
                                        self.len(), self.filename.display()));
         } else {
@@ -165,7 +151,6 @@ mod tests {
         mru.insert("c");
         mru.insert("b");
         mru.insert("a");
-        mru.clear_is_changed();
         mru
     }
 
@@ -174,14 +159,12 @@ mod tests {
         let mru = MruList::new("mru.txt", 20);
         assert_eq!(0, mru.len());
         assert!(mru.is_empty());
-        assert!(!mru.is_changed());
     }
 
     #[test]
     fn remove_can_remove_first_item() {
         let mut mru = make_simple_mru();
         mru.remove("a");
-        assert!(mru.is_changed());
         assert_eq!(2, mru.len());
         assert_eq!(mru[0], PathBuf::from("b"));
         assert_eq!(mru[1], PathBuf::from("c"));
@@ -191,7 +174,6 @@ mod tests {
     fn remove_can_remove_last_item() {
         let mut mru = make_simple_mru();
         mru.remove("c");
-        assert!(mru.is_changed());
         assert_eq!(2, mru.len());
         assert_eq!(mru[0], PathBuf::from("a"));
         assert_eq!(mru[1], PathBuf::from("b"));
@@ -201,18 +183,10 @@ mod tests {
     fn remove_for_item_that_is_not_in_list_is_noop() {
         let mut mru = make_simple_mru();
         mru.remove("z");
-        assert!(!mru.is_changed());
         assert_eq!(3, mru.len());
         assert_eq!(mru[0], PathBuf::from("a"));
         assert_eq!(mru[1], PathBuf::from("b"));
         assert_eq!(mru[2], PathBuf::from("c"));
-    }
-
-    #[test]
-    fn insert_sets_changed_flag() {
-        let mut mru = MruList::new("mru.txt", 20);
-        mru.insert("a");
-        assert!(mru.is_changed());
     }
 
     #[test]
